@@ -1,0 +1,2783 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Clock 4K</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Oswald:wght@300;400;500;600&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --gold: #f5d76e;
+      --gold-dim: #a58b38;
+      --panel: rgba(10, 10, 12, 0.95);
+      --text: #f0f0f0;
+      --text-dim: #a0a0a0;
+      --accent: #3498db;
+      --red: #e74c3c;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #050505;
+      overflow: hidden;
+      font-family: 'Roboto', sans-serif;
+      color: var(--text)
+    }
+
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh
+    }
+
+    #map-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair
+    }
+
+    /* GEOCHRON HUD EXACT COPY */
+    #geochron-hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    #geochron-hud::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 180px;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+      z-index: -1;
+    }
+
+    #geochron-hud::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 140px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+      z-index: -1;
+    }
+
+    /* TOP RULER */
+    #top-ruler {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: #000;
+      overflow: hidden;
+      border-bottom: 2px solid #222;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
+    }
+
+    #ruler-strip {
+      position: absolute;
+      top: 0;
+      width: 200%;
+      height: 100%;
+      display: flex;
+    }
+
+    .ruler-segment {
+      flex: 1;
+      height: 100%;
+      position: relative;
+    }
+
+    .ruler-tick {
+      position: absolute;
+      bottom: 0;
+      width: 1px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .ruler-tick.major {
+      height: 16px;
+      background: white;
+    }
+
+    .ruler-num {
+      position: absolute;
+      top: 18px;
+      width: 20px;
+      margin-left: -10px;
+      text-align: center;
+      color: black;
+      font-family: 'Roboto', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      background: white;
+      border-radius: 50%;
+      line-height: 20px;
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    }
+
+    .ruler-dst {
+      position: absolute;
+      top: 6px;
+      margin-left: -15px;
+      width: 30px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 9px;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    /* TABS */
+    #tz-tabs {
+      position: absolute;
+      top: 50px;
+      left: 0;
+      right: 0;
+      height: 22px;
+      overflow: hidden;
+    }
+
+    #tabs-strip {
+      position: absolute;
+      top: 0;
+      width: 200%;
+      height: 100%;
+      display: flex;
+    }
+
+    .tz-tab {
+      flex: 1;
+      position: relative;
+      border-left: 1px solid rgba(0, 0, 0, 0.5);
+      border-right: 1px solid rgba(0, 0, 0, 0.5);
+      background: linear-gradient(to bottom, #1181d1 0%, #074780 100%);
+      color: #fff;
+      font-family: 'Roboto', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 3px;
+    }
+
+    .tz-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      background: inherit;
+      transform: translateX(-50%) rotate(45deg);
+      z-index: -1;
+    }
+
+    /* BOTTOM ELEMENTS */
+    #time-display {
+      position: absolute;
+      bottom: 25px;
+      left: 35px;
+      color: #e0e6ed;
+      font-size: 44px;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 300;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 1);
+      letter-spacing: 1px;
+    }
+
+    #date-display {
+      position: absolute;
+      bottom: 25px;
+      right: 35px;
+      color: #e0e6ed;
+      font-size: 34px;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 300;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 1);
+      letter-spacing: 1px;
+    }
+
+    #center-logo {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: #fff;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 1);
+    }
+
+    #center-logo .logo-text {
+      font-family: 'Oswald', sans-serif;
+      font-size: 34px;
+      font-weight: 500;
+      letter-spacing: 3px;
+    }
+
+    #center-logo .dateline {
+      display: flex;
+      justify-content: space-between;
+      width: 200px;
+      margin: 0 auto;
+      font-family: 'Roboto', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    /* MOON WIDGET */
+    #moon-widget {
+      position: absolute;
+      top: 90px;
+      left: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+      font-family: 'Roboto', sans-serif;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 1);
+    }
+
+    /* OVERLAYS */
+    #tz-panel,
+    #iss-status {
+      display: none !important;
+    }
+
+    #tooltip {
+      position: absolute;
+      z-index: 70;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 5px 10px;
+      font-size: 11px;
+      color: #fff;
+      pointer-events: none;
+      display: none;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* SETTINGS MENU */
+    #menu-button {
+      position: absolute;
+      top: 90px;
+      right: 30px;
+      z-index: 50;
+      cursor: pointer;
+      color: white;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      font-family: 'Roboto', sans-serif;
+      pointer-events: auto;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    #menu-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    #settings-panel {
+      position: absolute;
+      top: 125px;
+      right: 30px;
+      z-index: 50;
+      background: rgba(10, 10, 12, 0.95);
+      padding: 15px;
+      padding-bottom: 5px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      pointer-events: auto;
+      display: block;
+      color: white;
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      min-width: 200px;
+    }
+
+    /* BBC NEWS STYLE TICKER */
+    #ticker-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 30px;
+      background: rgba(12, 12, 15, 0.95);
+      z-index: 100;
+      display: flex;
+      overflow: hidden;
+      font-family: 'Roboto', sans-serif;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #ticker-label {
+      background: #bb1919;
+      color: white;
+      padding: 0 12px;
+      line-height: 30px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+    }
+
+    #ticker-label::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      margin-left: 8px;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    #ticker-scroll {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #ticker-text {
+      position: absolute;
+      white-space: nowrap;
+      color: #e0e6ed;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 30px;
+      padding-left: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .ticker-item {
+      display: inline-block;
+      margin-right: 50px;
+    }
+
+    .ticker-item span {
+      color: #bb1919;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .ticker-time {
+      color: #888;
+      font-family: inherit;
+      font-size: 10px;
+      margin-right: 12px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 13px;
+      align-items: center;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #333;
+      transition: .4s;
+      border-radius: 20px;
+      border: 1px solid #555;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 1px;
+      background-color: #999;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #3498db;
+      border-color: #2980b9;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(14px);
+      background-color: white;
+    }
+
+    /* FLIGHT INFO POPUP */
+    #flight-popup {
+      display: none;
+      position: absolute;
+      z-index: 60;
+      background: rgba(8, 12, 20, 0.96);
+      border: 1px solid rgba(255, 207, 51, 0.5);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
+      color: #e0e0e0;
+      min-width: 260px;
+      max-width: 420px;
+      max-height: 60vh;
+      overflow-y: auto;
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    }
+
+    #flight-popup .fp-callsign {
+      font-family: 'Oswald', sans-serif;
+      font-size: 18px;
+      color: #ffcf33;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    #flight-popup .fp-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 3px;
+    }
+
+    #flight-popup .fp-label {
+      color: #888;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #flight-popup .fp-val {
+      color: #fff;
+      font-weight: 500;
+    }
+
+    #quake-popup {
+      display: none;
+      position: absolute;
+      z-index: 61;
+      background: rgba(20, 10, 8, 0.96);
+      border: 1px solid rgba(255, 80, 50, 0.6);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
+      color: #e0e0e0;
+      min-width: 220px;
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    #quake-popup .fp-callsign {
+      color: #ff5032;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <canvas id="map-canvas"></canvas>
+
+    <div id="geochron-hud">
+      <div id="top-ruler">
+        <div id="ruler-strip"></div>
+      </div>
+      <div id="tz-tabs">
+        <div id="tabs-strip"></div>
+      </div>
+
+      <div id="moon-widget">
+        <div id="moon-icon"
+          style="width:36px; height:36px; border-radius:18px; background:radial-gradient(circle at 30% 30%, #eee, #888); box-shadow:0 0 10px rgba(255,255,255,0.4); margin-bottom:6px;">
+        </div>
+        <div style="font-size:14px; font-weight:500;">Full Moon</div>
+      </div>
+
+      <div id="time-display">--:--:--</div>
+      <div id="date-display">--- -- ----</div>
+
+      <div id="center-logo">
+        <div class="logo-text">ST<span style="color:#f1c40f;">E</span>VE<span
+            style="font-size:14px; vertical-align:super;">®</span></div>
+        <div class="dateline"><span id="day-west">&#9668; Sunday</span><span id="day-east">Saturday &#9658;</span></div>
+      </div>
+    </div>
+
+    <div id="menu-button"
+      onclick="document.getElementById('settings-panel').style.display = document.getElementById('settings-panel').style.display === 'none' ? 'block' : 'none'">
+      ✭ LAYERS
+    </div>
+    <div id="settings-panel">
+      <div
+        style="font-family:'Oswald',sans-serif; color:#f5d76e; font-size:16px; margin-bottom:12px; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
+        LIVE OVERLAYS</div>
+      <div class="setting-row" title="Live data from NOAA SWPC">
+        <span>Live Aurora (NOAA API)</span>
+        <label class="switch"><input type="checkbox" id="toggle-aurora"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row" title="Live ADS-B data via OpenSky fallback + Airplanes.live">
+        <span>Live Flights (ADS-B) <span id="flight-count" style="color:#888;font-size:10px;"></span></span>
+        <label class="switch"><input type="checkbox" id="toggle-flights" checked><span class="slider"></span></label>
+      </div>
+      <div class="setting-row" title="Show only military aircraft (Airplanes.live MIL feed)">
+        <span>Military Only</span>
+        <label class="switch"><input type="checkbox" id="toggle-military"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row" title="Show stored city markers and labels">
+        <span>Show Cities</span>
+        <label class="switch"><input type="checkbox" id="toggle-cities"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row" title="Share your location to plot it and fetch nearby flights">
+        <span>Use My Location <span id="location-status" style="color:#888;font-size:10px;"></span></span>
+        <label class="switch"><input type="checkbox" id="toggle-location"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row" title="Live data from USGS">
+        <span>Global Earthquakes (USGS)</span>
+        <label class="switch"><input type="checkbox" id="toggle-quakes" checked><span class="slider"></span></label>
+      </div>
+      <div style="margin-top:15px; font-size:11px; color:#888; border-top:1px solid #333; padding-top:10px;">
+        Weather radar & clouds require<br />WMS server integrations.
+      </div>
+      <div id="ticker-container">
+        <div id="ticker-label">Live Feed</div>
+        <div id="ticker-scroll">
+          <div id="ticker-text">
+            <div class="ticker-item"><span>SYSTEM</span> Geochron Global Network initialized. Awaiting satellite
+              handshake...</div>
+            <div class="ticker-item"><span>ISS</span> Telemetry streaming active. Monitoring LEO orbital path.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="flight-popup"></div>
+    <div id="quake-popup"></div>
+    <div id="tooltip"></div>
+
+    <script>
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  CONSTANTS
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      const RAD = Math.PI / 180;
+      const DEG = 180 / Math.PI;
+      const canvas = document.getElementById('map-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H;
+      let offscreen, offCtx;
+      let proceduralDay, proceduralNight;
+      let dayImg = null, nightImg = null;
+      let USE_PROCEDURAL = true;
+      let issData = null;
+      let selectedTZ = null;
+      let mouseX = 0, mouseY = 0;
+      let hoveredQuake = null;
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  TICKER LOGIC
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      let tickerQueue = [];
+      let tickerActive = false;
+      let tickerTextElement = null; // Reference to the #ticker-text div
+      let tickerScrollPosition = 0; // Current scroll position
+
+      function initTicker() {
+        tickerTextElement = document.getElementById('ticker-text');
+        if (!tickerTextElement) return;
+
+        // Start the continuous scroll animation
+        function step() {
+          tickerScrollPosition -= 1.35; // smooth BBC-style crawl speed
+          if (tickerScrollPosition < -tickerTextElement.offsetWidth) {
+            tickerScrollPosition = window.innerWidth; // Reset when it goes off screen
+          }
+          tickerTextElement.style.transform = `translateX(${tickerScrollPosition}px)`;
+          requestAnimationFrame(step);
+        }
+        step();
+      }
+
+      function updateTicker(category, text) {
+        if (!tickerTextElement) return; // Ensure initTicker has run
+        const now = new Date();
+        const ts = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+        const item = document.createElement('div');
+        item.className = 'ticker-item';
+        item.innerHTML = `<span class="ticker-time">${ts}</span><span>${category.toUpperCase()}</span> ${text}`;
+        tickerTextElement.appendChild(item);
+
+        // Limit number of items to prevent infinite growth
+        if (tickerTextElement.children.length > 20) {
+          tickerTextElement.removeChild(tickerTextElement.firstChild);
+        }
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  SOLAR / LUNAR MATH
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function solarPosition(ms) {
+        const JD = ms / 86400000 + 2440587.5;
+        const n = JD - 2451545.0;
+        const L = (280.460 + 0.9856474 * n) % 360;
+        const g = (357.528 + 0.9856003 * n) % 360;
+        const lambda = L + 1.915 * Math.sin(g * RAD) + 0.020 * Math.sin(2 * g * RAD);
+        const epsilon = 23.439 - 0.0000004 * n;
+        const sinLambda = Math.sin(lambda * RAD);
+        const decl = Math.asin(Math.sin(epsilon * RAD) * sinLambda) * DEG;
+        const RA = Math.atan2(Math.cos(epsilon * RAD) * sinLambda, Math.cos(lambda * RAD)) * DEG;
+        const GMST = (6.697375 + 0.0657098242 * n + (ms % 86400000) / 3600000 * 1.002737909) * 15 % 360;
+        const lon = ((RA - GMST) + 540) % 360 - 180;
+        return { lat: decl, lon };
+      }
+
+      function lunarPosition(ms) {
+        const JD = ms / 86400000 + 2440587.5;
+        const T = (JD - 2451545.0) / 36525.0;
+        const L0 = 218.316 + 13.176396 * (JD - 2451545.0);
+        const M = 134.963 + 13.064993 * (JD - 2451545.0);
+        const F = 93.272 + 13.229350 * (JD - 2451545.0);
+        const lon = L0 + 6.289 * Math.sin(M * RAD);
+        const lat = 5.128 * Math.sin(F * RAD);
+        const epsilon = 23.439;
+        const sinLon = Math.sin(lon * RAD);
+        const decl = Math.asin(Math.sin(epsilon * RAD) * sinLon + Math.cos(epsilon * RAD) * Math.sin(lat * RAD)) * DEG;
+        const RA = Math.atan2(Math.cos(epsilon * RAD) * sinLon - Math.sin(epsilon * RAD) * Math.tan(lat * RAD), Math.cos(lon * RAD)) * DEG;
+        const GMST = (6.697375 + 0.0657098242 * (JD - 2451545.0) + (ms % 86400000) / 3600000 * 1.002737909) * 15 % 360;
+        const subLon = ((RA - GMST) + 540) % 360 - 180;
+        return { lat: decl, lon: subLon };
+      }
+
+      function angularDist(lat1, lon1, lat2, lon2) {
+        const dLon = (lon2 - lon1) * RAD;
+        const cosA = Math.sin(lat1 * RAD) * Math.sin(lat2 * RAD) + Math.cos(lat1 * RAD) * Math.cos(lat2 * RAD) * Math.cos(dLon);
+        return Math.acos(Math.max(-1, Math.min(1, cosA))) * DEG;
+      }
+
+      // Sunrise/sunset for a location
+      function sunriseSet(lat, lon, date) {
+        const JD = date.getTime() / 86400000 + 2440587.5;
+        const n = Math.floor(JD) - 2451545 + 0.5;
+        const Lsun = (280.460 + 0.9856474 * n) % 360;
+        const g = (357.528 + 0.9856003 * n) % 360;
+        const lambda = Lsun + 1.915 * Math.sin(g * RAD) + 0.02 * Math.sin(2 * g * RAD);
+        const epsilon = 23.439 * RAD;
+        const RA = Math.atan2(Math.cos(epsilon) * Math.sin(lambda * RAD), Math.cos(lambda * RAD)) * DEG / 15;
+        const decl = Math.asin(Math.sin(epsilon) * Math.sin(lambda * RAD));
+        const cosH = (Math.cos(90.833 * RAD) - Math.sin(lat * RAD) * Math.sin(decl)) / (Math.cos(lat * RAD) * Math.cos(decl));
+        if (cosH < -1) return { rise: 'Polar Day', set: '—' };
+        if (cosH > 1) return { rise: 'Polar Night', set: '—' };
+        const H = Math.acos(cosH) * DEG / 15;
+        const EqT = (Lsun / 15 - RA);
+        const noon = 12 - EqT - lon / 15;
+        const riseUTC = noon - H;
+        const setUTC = noon + H;
+        const fmt = (h) => {
+          let hh = ((h % 24) + 24) % 24;
+          return `${String(Math.floor(hh)).padStart(2, '0')}:${String(Math.floor((hh % 1) * 60)).padStart(2, '0')} UTC`;
+        };
+        return { rise: fmt(riseUTC), set: fmt(setUTC) };
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  TIMEZONE DATA (UTC offset â†’ colour, name, cities)
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      const TZ_BANDS = [
+        { offset: -12, color: 'rgba(180,50,50,0.18)', name: 'UTC−12', label: 'Baker Island' },
+        { offset: -11, color: 'rgba(180,80,30,0.18)', name: 'UTC−11', label: 'American Samoa' },
+        { offset: -10, color: 'rgba(180,120,20,0.18)', name: 'UTC−10', label: 'Hawaii' },
+        { offset: -9, color: 'rgba(160,160,10,0.18)', name: 'UTC−9', label: 'Alaska' },
+        { offset: -8, color: 'rgba(100,180,20,0.18)', name: 'UTC−8', label: 'Pacific Time' },
+        { offset: -7, color: 'rgba(40,180,60,0.18)', name: 'UTC−7', label: 'Mountain Time' },
+        { offset: -6, color: 'rgba(20,180,120,0.18)', name: 'UTC−6', label: 'Central Time' },
+        { offset: -5, color: 'rgba(20,160,180,0.18)', name: 'UTC−5', label: 'Eastern Time' },
+        { offset: -4, color: 'rgba(20,100,200,0.18)', name: 'UTC−4', label: 'Atlantic Time' },
+        { offset: -3, color: 'rgba(60,40,200,0.18)', name: 'UTC−3', label: 'Brazil/Argentina' },
+        { offset: -2, color: 'rgba(120,20,200,0.18)', name: 'UTC−2', label: 'Mid-Atlantic' },
+        { offset: -1, color: 'rgba(180,20,180,0.18)', name: 'UTC−1', label: 'Azores' },
+        { offset: 0, color: 'rgba(200,20,100,0.18)', name: 'UTC±0', label: 'London / Accra' },
+        { offset: 1, color: 'rgba(200,20,40,0.18)', name: 'UTC+1', label: 'Central Europe' },
+        { offset: 2, color: 'rgba(200,60,20,0.18)', name: 'UTC+2', label: 'Eastern Europe' },
+        { offset: 3, color: 'rgba(180,120,20,0.18)', name: 'UTC+3', label: 'Moscow / Riyadh' },
+        { offset: 4, color: 'rgba(140,170,10,0.18)', name: 'UTC+4', label: 'Dubai / Baku' },
+        { offset: 5, color: 'rgba(80,180,20,0.18)', name: 'UTC+5', label: 'Pakistan / Yekaterinburg' },
+        { offset: 6, color: 'rgba(20,180,80,0.18)', name: 'UTC+6', label: 'Bangladesh / Almaty' },
+        { offset: 7, color: 'rgba(20,170,160,0.18)', name: 'UTC+7', label: 'Bangkok / Jakarta' },
+        { offset: 8, color: 'rgba(20,100,200,0.18)', name: 'UTC+8', label: 'Beijing / Singapore' },
+        { offset: 9, color: 'rgba(40,40,200,0.18)', name: 'UTC+9', label: 'Tokyo / Seoul' },
+        { offset: 10, color: 'rgba(100,20,200,0.18)', name: 'UTC+10', label: 'Sydney / Vladivostok' },
+        { offset: 11, color: 'rgba(160,20,180,0.18)', name: 'UTC+11', label: 'Solomon Islands' },
+        { offset: 12, color: 'rgba(200,20,120,0.18)', name: 'UTC+12', label: 'Fiji / Auckland' },
+      ];
+
+      let showTZBands = false;
+      let highlightedTZ = null;
+      let showCities = false;
+      let userLocation = {
+        enabled: false,
+        lat: null,
+        lon: null,
+        accuracyM: null,
+        ts: 0
+      };
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  100+ CITY DATA
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      const CITIES = [
+        // Americas
+        { n: 'New York', lat: 40.71, lon: -74.01, tz: 'America/New_York', cap: false, clk: true },
+        { n: 'Los Angeles', lat: 34.05, lon: -118.24, tz: 'America/Los_Angeles', cap: false, clk: true },
+        { n: 'Chicago', lat: 41.88, lon: -87.63, tz: 'America/Chicago', cap: false },
+        { n: 'Houston', lat: 29.76, lon: -95.37, tz: 'America/Chicago', cap: false },
+        { n: 'Miami', lat: 25.77, lon: -80.19, tz: 'America/New_York', cap: false },
+        { n: 'Seattle', lat: 47.61, lon: -122.33, tz: 'America/Los_Angeles', cap: false },
+        { n: 'Denver', lat: 39.74, lon: -104.98, tz: 'America/Denver', cap: false },
+        { n: 'Washington DC', lat: 38.91, lon: -77.04, tz: 'America/New_York', cap: true },
+        { n: 'Toronto', lat: 43.65, lon: -79.38, tz: 'America/Toronto', cap: false },
+        { n: 'Vancouver', lat: 49.28, lon: -123.12, tz: 'America/Vancouver', cap: false },
+        { n: 'Montreal', lat: 45.50, lon: -73.57, tz: 'America/Toronto', cap: false },
+        { n: 'Mexico City', lat: 19.43, lon: -99.13, tz: 'America/Mexico_City', cap: true },
+        { n: 'BogotÃ¡', lat: 4.71, lon: -74.07, tz: 'America/Bogota', cap: true },
+        { n: 'Lima', lat: -12.05, lon: -77.04, tz: 'America/Lima', cap: true },
+        { n: 'Santiago', lat: -33.45, lon: -70.67, tz: 'America/Santiago', cap: true },
+        { n: 'Buenos Aires', lat: -34.60, lon: -58.38, tz: 'America/Argentina/Buenos_Aires', cap: true },
+        { n: 'SÃ£o Paulo', lat: -23.55, lon: -46.63, tz: 'America/Sao_Paulo', cap: false },
+        { n: 'Rio de Janeiro', lat: -22.91, lon: -43.17, tz: 'America/Sao_Paulo', cap: false },
+        { n: 'BrasÃ­lia', lat: -15.78, lon: -47.93, tz: 'America/Sao_Paulo', cap: true },
+        { n: 'Caracas', lat: 10.49, lon: -66.88, tz: 'America/Caracas', cap: true },
+        { n: 'Havana', lat: 23.13, lon: -82.38, tz: 'America/Havana', cap: true },
+        { n: 'Panama City', lat: 8.99, lon: -79.52, tz: 'America/Panama', cap: true },
+        { n: 'Guadalajara', lat: 20.66, lon: -103.35, tz: 'America/Mexico_City', cap: false },
+        { n: 'Quito', lat: -0.23, lon: -78.52, tz: 'America/Guayaquil', cap: true },
+        // Europe
+        { n: 'London', lat: 51.51, lon: -0.13, tz: 'Europe/London', cap: true, clk: true },
+        { n: 'Paris', lat: 48.85, lon: 2.35, tz: 'Europe/Paris', cap: true },
+        { n: 'Berlin', lat: 52.52, lon: 13.41, tz: 'Europe/Berlin', cap: true },
+        { n: 'Madrid', lat: 40.42, lon: -3.70, tz: 'Europe/Madrid', cap: true },
+        { n: 'Rome', lat: 41.90, lon: 12.50, tz: 'Europe/Rome', cap: true },
+        { n: 'Amsterdam', lat: 52.37, lon: 4.90, tz: 'Europe/Amsterdam', cap: true },
+        { n: 'Brussels', lat: 50.85, lon: 4.35, tz: 'Europe/Brussels', cap: true },
+        { n: 'Vienna', lat: 48.21, lon: 16.37, tz: 'Europe/Vienna', cap: true },
+        { n: 'Warsaw', lat: 52.23, lon: 21.01, tz: 'Europe/Warsaw', cap: true },
+        { n: 'Prague', lat: 50.08, lon: 14.44, tz: 'Europe/Prague', cap: true },
+        { n: 'Stockholm', lat: 59.33, lon: 18.07, tz: 'Europe/Stockholm', cap: true },
+        { n: 'Oslo', lat: 59.91, lon: 10.75, tz: 'Europe/Oslo', cap: true },
+        { n: 'Copenhagen', lat: 55.68, lon: 12.57, tz: 'Europe/Copenhagen', cap: true },
+        { n: 'Helsinki', lat: 60.17, lon: 24.94, tz: 'Europe/Helsinki', cap: true },
+        { n: 'Athens', lat: 37.98, lon: 23.73, tz: 'Europe/Athens', cap: true },
+        { n: 'Bucharest', lat: 44.43, lon: 26.10, tz: 'Europe/Bucharest', cap: true },
+        { n: 'Budapest', lat: 47.50, lon: 19.04, tz: 'Europe/Budapest', cap: true },
+        { n: 'Lisbon', lat: 38.72, lon: -9.14, tz: 'Europe/Lisbon', cap: true },
+        { n: 'Kyiv', lat: 50.45, lon: 30.52, tz: 'Europe/Kiev', cap: true },
+        { n: 'Moscow', lat: 55.75, lon: 37.62, tz: 'Europe/Moscow', cap: true },
+        { n: 'St Petersburg', lat: 59.95, lon: 30.32, tz: 'Europe/Moscow', cap: false },
+        { n: 'Zurich', lat: 47.38, lon: 8.54, tz: 'Europe/Zurich', cap: false },
+        { n: 'Barcelona', lat: 41.39, lon: 2.16, tz: 'Europe/Madrid', cap: false },
+        { n: 'Milan', lat: 45.46, lon: 9.19, tz: 'Europe/Rome', cap: false },
+        { n: 'Munich', lat: 48.14, lon: 11.58, tz: 'Europe/Berlin', cap: false },
+        { n: 'Hamburg', lat: 53.55, lon: 10.00, tz: 'Europe/Berlin', cap: false },
+        { n: 'Minsk', lat: 53.90, lon: 27.56, tz: 'Europe/Minsk', cap: true },
+        { n: 'Riga', lat: 56.95, lon: 24.11, tz: 'Europe/Riga', cap: true },
+        // Middle East / Africa
+        { n: 'Istanbul', lat: 41.01, lon: 28.95, tz: 'Europe/Istanbul', cap: false },
+        { n: 'Ankara', lat: 39.93, lon: 32.86, tz: 'Europe/Istanbul', cap: true },
+        { n: 'Cairo', lat: 30.04, lon: 31.24, tz: 'Africa/Cairo', cap: true },
+        { n: 'Alexandria', lat: 31.20, lon: 29.92, tz: 'Africa/Cairo', cap: false },
+        { n: 'Dubai', lat: 25.20, lon: 55.27, tz: 'Asia/Dubai', cap: false, clk: true },
+        { n: 'Abu Dhabi', lat: 24.47, lon: 54.37, tz: 'Asia/Dubai', cap: true },
+        { n: 'Riyadh', lat: 24.69, lon: 46.72, tz: 'Asia/Riyadh', cap: true },
+        { n: 'Tehran', lat: 35.69, lon: 51.39, tz: 'Asia/Tehran', cap: true },
+        { n: 'Baghdad', lat: 33.34, lon: 44.40, tz: 'Asia/Baghdad', cap: true },
+        { n: 'Nairobi', lat: -1.29, lon: 36.82, tz: 'Africa/Nairobi', cap: true },
+        { n: 'Lagos', lat: 6.52, lon: 3.38, tz: 'Africa/Lagos', cap: false },
+        { n: 'Abuja', lat: 9.07, lon: 7.40, tz: 'Africa/Lagos', cap: true },
+        { n: 'Accra', lat: 5.56, lon: -0.20, tz: 'Africa/Accra', cap: true },
+        { n: 'Addis Ababa', lat: 9.03, lon: 38.74, tz: 'Africa/Addis_Ababa', cap: true },
+        { n: 'Johannesburg', lat: -26.20, lon: 28.04, tz: 'Africa/Johannesburg', cap: false },
+        { n: 'Cape Town', lat: -33.93, lon: 18.42, tz: 'Africa/Johannesburg', cap: false },
+        { n: 'Casablanca', lat: 33.59, lon: -7.62, tz: 'Africa/Casablanca', cap: false },
+        { n: 'Algiers', lat: 36.74, lon: 3.06, tz: 'Africa/Algiers', cap: true },
+        { n: 'Tunis', lat: 36.82, lon: 10.17, tz: 'Africa/Tunis', cap: true },
+        { n: 'Khartoum', lat: 15.55, lon: 32.53, tz: 'Africa/Khartoum', cap: true },
+        { n: 'Kinshasa', lat: -4.32, lon: 15.32, tz: 'Africa/Kinshasa', cap: true },
+        { n: 'Dar es Salaam', lat: -6.80, lon: 39.27, tz: 'Africa/Dar_es_Salaam', cap: false },
+        { n: 'Kampala', lat: 0.32, lon: 32.58, tz: 'Africa/Kampala', cap: true },
+        { n: 'Dakar', lat: 14.69, lon: -17.44, tz: 'Africa/Dakar', cap: true },
+        { n: 'Luanda', lat: -8.84, lon: 13.23, tz: 'Africa/Luanda', cap: true },
+        // Asia
+        { n: 'Mumbai', lat: 19.08, lon: 72.88, tz: 'Asia/Kolkata', cap: false },
+        { n: 'Delhi', lat: 28.61, lon: 77.21, tz: 'Asia/Kolkata', cap: true },
+        { n: 'Bengaluru', lat: 12.97, lon: 77.59, tz: 'Asia/Kolkata', cap: false },
+        { n: 'Kolkata', lat: 22.57, lon: 88.36, tz: 'Asia/Kolkata', cap: false },
+        { n: 'Chennai', lat: 13.08, lon: 80.27, tz: 'Asia/Kolkata', cap: false },
+        { n: 'Karachi', lat: 24.86, lon: 67.01, tz: 'Asia/Karachi', cap: false },
+        { n: 'Islamabad', lat: 33.72, lon: 73.06, tz: 'Asia/Karachi', cap: true },
+        { n: 'Dhaka', lat: 23.81, lon: 90.41, tz: 'Asia/Dhaka', cap: true },
+        { n: 'Colombo', lat: 6.93, lon: 79.84, tz: 'Asia/Colombo', cap: true },
+        { n: 'Kathmandu', lat: 27.72, lon: 85.32, tz: 'Asia/Kathmandu', cap: true },
+        { n: 'Tashkent', lat: 41.30, lon: 69.24, tz: 'Asia/Tashkent', cap: true },
+        { n: 'Almaty', lat: 43.25, lon: 76.95, tz: 'Asia/Almaty', cap: false },
+        { n: 'Kabul', lat: 34.53, lon: 69.17, tz: 'Asia/Kabul', cap: true },
+        { n: 'Singapore', lat: 1.35, lon: 103.82, tz: 'Asia/Singapore', cap: true },
+        { n: 'Kuala Lumpur', lat: 3.14, lon: 101.69, tz: 'Asia/Kuala_Lumpur', cap: true },
+        { n: 'Bangkok', lat: 13.75, lon: 100.52, tz: 'Asia/Bangkok', cap: true },
+        { n: 'Hanoi', lat: 21.03, lon: 105.85, tz: 'Asia/Ho_Chi_Minh', cap: true },
+        { n: 'Ho Chi Minh', lat: 10.82, lon: 106.63, tz: 'Asia/Ho_Chi_Minh', cap: false },
+        { n: 'Manila', lat: 14.60, lon: 120.98, tz: 'Asia/Manila', cap: true },
+        { n: 'Jakarta', lat: -6.21, lon: 106.85, tz: 'Asia/Jakarta', cap: true },
+        { n: 'Beijing', lat: 39.91, lon: 116.39, tz: 'Asia/Shanghai', cap: true },
+        { n: 'Shanghai', lat: 31.23, lon: 121.47, tz: 'Asia/Shanghai', cap: false },
+        { n: 'Shenzhen', lat: 22.54, lon: 114.06, tz: 'Asia/Shanghai', cap: false },
+        { n: 'Chengdu', lat: 30.57, lon: 104.07, tz: 'Asia/Shanghai', cap: false },
+        { n: 'Hong Kong', lat: 22.32, lon: 114.17, tz: 'Asia/Hong_Kong', cap: false },
+        { n: 'Tokyo', lat: 35.69, lon: 139.69, tz: 'Asia/Tokyo', cap: true, clk: true },
+        { n: 'Seoul', lat: 37.57, lon: 126.98, tz: 'Asia/Seoul', cap: true },
+        { n: 'Osaka', lat: 34.69, lon: 135.50, tz: 'Asia/Tokyo', cap: false },
+        { n: 'Taipei', lat: 25.05, lon: 121.53, tz: 'Asia/Taipei', cap: true },
+        { n: 'Pyongyang', lat: 39.03, lon: 125.75, tz: 'Asia/Pyongyang', cap: true },
+        { n: 'Ulaanbaatar', lat: 47.92, lon: 106.92, tz: 'Asia/Ulaanbaatar', cap: true },
+        { n: 'Novosibirsk', lat: 54.98, lon: 82.90, tz: 'Asia/Novosibirsk', cap: false },
+        { n: 'Vladivostok', lat: 43.12, lon: 131.89, tz: 'Asia/Vladivostok', cap: false },
+        { n: 'Yekaterinburg', lat: 56.84, lon: 60.61, tz: 'Asia/Yekaterinburg', cap: false },
+        // Oceania
+        { n: 'Sydney', lat: -33.87, lon: 151.21, tz: 'Australia/Sydney', cap: false, clk: true },
+        { n: 'Melbourne', lat: -37.81, lon: 144.96, tz: 'Australia/Melbourne', cap: false },
+        { n: 'Brisbane', lat: -27.47, lon: 153.03, tz: 'Australia/Brisbane', cap: false },
+        { n: 'Perth', lat: -31.95, lon: 115.86, tz: 'Australia/Perth', cap: false },
+        { n: 'Canberra', lat: -35.28, lon: 149.13, tz: 'Australia/Sydney', cap: true },
+        { n: 'Auckland', lat: -36.87, lon: 174.77, tz: 'Pacific/Auckland', cap: false },
+        { n: 'Wellington', lat: -41.29, lon: 174.78, tz: 'Pacific/Auckland', cap: true },
+        { n: 'Port Moresby', lat: -9.44, lon: 147.18, tz: 'Pacific/Port_Moresby', cap: true },
+      ];
+
+      const CITY_CLOCK_LIST = ['London', 'New York', 'Dubai', 'Tokyo', 'Sydney', 'Los Angeles'];
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  RESIZE
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        offscreen = new OffscreenCanvas(W, H);
+        offCtx = offscreen.getContext('2d');
+        buildProceduralImages();
+      }
+      window.addEventListener('resize', resize);
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  PROCEDURAL MAP — Detailed landmasses via SVG-path-like data
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // Landmasses defined as arrays of [lon, lat] control points
+      const LANDMASSES = {
+        // North America
+        northAmerica: [
+          [-168, 71], [-140, 70], [-130, 69], [-110, 70], [-85, 73], [-75, 72], [-65, 62], [-55, 60],
+          [-53, 47], [-66, 44], [-70, 42], [-75, 35], [-80, 25], [-87, 15], [-77, 8], [-85, 10],
+          [-90, 15], [-95, 18], [-105, 20], [-110, 23], [-120, 30], [-120, 37], [-124, 46],
+          [-135, 58], [-150, 60], [-160, 60], [-165, 63], [-168, 71]
+        ],
+        greenland: [
+          [-44, 83], [-20, 83], [-18, 76], [-24, 70], [-43, 60], [-52, 65], [-57, 75], [-44, 83]
+        ],
+        // South America
+        southAmerica: [
+          [-80, 12], [-75, 10], [-65, 0], [-52, -4], [-35, -8], [-35, -15], [-40, -20], [-45, -23],
+          [-48, -28], [-55, -35], [-65, -42], [-68, -55], [-70, -52], [-66, -45], [-62, -38],
+          [-55, -30], [-50, -25], [-48, -18], [-40, -5], [-50, 0], [-60, 5], [-73, 10], [-80, 12]
+        ],
+        // Europe
+        europe: [
+          [-10, 35], [-5, 36], [0, 40], [3, 43], [7, 44], [12, 44], [14, 42], [16, 40], [20, 38],
+          [25, 37], [28, 40], [30, 45], [35, 47], [32, 52], [28, 55], [22, 58], [18, 60], [15, 58],
+          [12, 55], [8, 55], [5, 54], [0, 53], [-3, 53], [-5, 50], [-8, 48], [-10, 44], [-9, 40], [-6, 37], [-10, 35]
+        ],
+        // Scandinavia
+        scandinavia: [
+          [5, 58], [8, 57], [10, 55], [12, 56], [15, 57], [18, 59], [20, 62], [25, 65], [28, 70],
+          [28, 71], [22, 70], [18, 69], [15, 69], [14, 65], [12, 62], [8, 58], [5, 58]
+        ],
+        // Africa
+        africa: [
+          [-5, 36], [-2, 35], [10, 37], [12, 33], [15, 30], [25, 30], [32, 30], [37, 22], [43, 12],
+          [45, 10], [42, 5], [38, 0], [35, -5], [30, -12], [25, -18], [18, -22], [15, -25], [18, -30],
+          [20, -35], [18, -35], [15, -33], [12, -28], [8, -20], [3, -10], [2, 5], [0, 5], [-3, 5],
+          [-8, 5], [-15, 10], [-17, 14], [-17, 22], [-12, 28], [-8, 33], [-5, 36]
+        ],
+        // Asia main
+        asiaMain: [
+          [28, 42], [30, 45], [35, 47], [40, 50], [50, 50], [60, 53], [70, 55], [80, 54], [90, 53],
+          [100, 50], [110, 48], [120, 48], [130, 50], [135, 52], [140, 55], [145, 50], [145, 43],
+          [135, 38], [130, 32], [120, 25], [115, 20], [110, 15], [105, 10], [100, 5], [100, 0],
+          [105, -5], [110, -8], [115, -8], [120, -5], [125, 0], [130, 0], [125, 5], [120, 15],
+          [115, 20], [110, 25], [100, 30], [90, 28], [80, 30], [70, 25], [60, 22], [55, 25], [50, 30],
+          [45, 38], [38, 37], [32, 35], [28, 40], [28, 42]
+        ],
+        // Indian subcontinent
+        india: [
+          [68, 22], [72, 23], [75, 20], [78, 15], [80, 10], [78, 8], [77, 8], [74, 10], [72, 18], [68, 22]
+        ],
+        // Australia
+        australia: [
+          [114, -22], [118, -20], [124, -17], [130, -14], [136, -14], [138, -18], [140, -20],
+          [142, -18], [145, -18], [148, -20], [152, -25], [154, -28], [150, -32], [152, -35],
+          [148, -38], [144, -38], [138, -36], [130, -33], [118, -32], [114, -28], [112, -25], [114, -22]
+        ],
+        // Japan
+        japan: [
+          [130, 31], [132, 33], [134, 34], [136, 36], [138, 38], [140, 40], [141, 41], [140, 44],
+          [143, 44], [145, 43], [143, 40], [141, 38], [139, 36], [136, 34], [132, 33], [130, 31]
+        ],
+        // UK & Ireland
+        uk: [
+          [-6, 54], [-5, 50], [-3, 50], [0, 51], [2, 52], [1, 54], [-2, 55], [-4, 56], [-6, 57],
+          [-6, 58], [-4, 59], [-2, 58], [0, 58], [-2, 56], [-3, 55], [-4, 53], [-6, 54]
+        ],
+        ireland: [[-10, 51], [-8, 51], [-6, 52], [-6, 54], [-8, 55], [-10, 54], [-10, 51]],
+        // Iceland
+        iceland: [[-24, 64], [-14, 63], [-12, 64], [-14, 66], [-18, 66], [-22, 66], [-24, 65], [-24, 64]],
+        // New Zealand
+        newZealandN: [[173, -35], [174, -37], [176, -38], [178, -40], [178, -41], [175, -41], [173, -39], [173, -35]],
+        newZealandS: [[168, -46], [170, -48], [172, -46], [174, -44], [172, -43], [170, -45], [168, -46]],
+        // Philippines major island
+        luzon: [[120, 14], [122, 16], [124, 17], [124, 15], [122, 12], [120, 13], [120, 14]],
+        // Sri Lanka
+        sriLanka: [[80, 10], [82, 9], [82, 7], [80, 6], [79, 8], [80, 10]],
+        // Madagascar
+        madagascar: [[44, -12], [48, -12], [50, -18], [48, -25], [44, -24], [44, -18], [44, -12]],
+        // Indonesia (Sumatra + Java outlines)
+        sumatra: [[96, 5], [100, 4], [104, 2], [106, 0], [106, -4], [104, -5], [100, -2], [96, 3], [96, 5]],
+        java: [[106, -6], [108, -7], [110, -7], [112, -7], [114, -8], [114, -9], [112, -9], [108, -8], [106, -7]],
+        borneo: [[108, 2], [112, 4], [116, 5], [118, 4], [118, 1], [116, -1], [112, -1], [108, 0], [108, 2]],
+        // Cuba
+        cuba: [[-84, 22], [-80, 23], [-76, 22], [-74, 20], [-76, 19], [-82, 19], [-84, 22]],
+        // Baja California
+        bajaCalifornia: [[-117, 32], [-115, 30], [-110, 25], [-110, 23], [-115, 25], [-117, 28], [-117, 32]],
+        // Papua New Guinea
+        png: [[141, -2], [144, 0], [146, -2], [148, -5], [146, -7], [143, -7], [141, -6], [141, -2]],
+      };
+
+      function drawProceduralMap(ctx, w, h, night) {
+        // Deep ocean
+        if (night) {
+          ctx.fillStyle = '#010610';
+        } else {
+          // Ocean gradient
+          const og = ctx.createLinearGradient(0, 0, 0, h);
+          og.addColorStop(0, '#0a3d6b');
+          og.addColorStop(0.4, '#0d4f82');
+          og.addColorStop(1, '#06243d');
+          ctx.fillStyle = og;
+        }
+        ctx.fillRect(0, 0, w, h);
+
+        function ll(lon, lat) {
+          return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
+        }
+
+        function drawLand(points, fillColor, edgeColor) {
+          ctx.beginPath();
+          points.forEach(([lon, lat], i) => {
+            const [x, y] = ll(lon, lat);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          });
+          ctx.closePath();
+          ctx.fillStyle = fillColor;
+          ctx.fill();
+          if (edgeColor) {
+            ctx.strokeStyle = edgeColor;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+
+        if (night) {
+          const landN = '#0b160b';
+          const edge = 'rgba(30,60,30,0.5)';
+          Object.values(LANDMASSES).forEach(pts => drawLand(pts, landN, edge));
+
+          // Ice caps (dark bluish)
+          // Antarctica
+          ctx.fillStyle = '#0c1420';
+          ctx.fillRect(0, h * 0.89, w, h * 0.11);
+          // Arctic (top strip)
+          ctx.fillStyle = '#0c1622';
+          ctx.fillRect(0, 0, w, h * 0.04);
+
+          // City light blobs
+          CITIES.forEach(city => {
+            const [x, y] = ll(city.lon, city.lat);
+            const pop = city.cap ? 5 : 3;
+            const g = ctx.createRadialGradient(x, y, 0, x, y, pop * 10);
+            g.addColorStop(0, 'rgba(255,230,140,0.95)');
+            g.addColorStop(0.2, 'rgba(255,180,60,0.5)');
+            g.addColorStop(0.5, 'rgba(255,130,20,0.15)');
+            g.addColorStop(1, 'rgba(255,100,0,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, pop * 10, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Dense light corridors (e.g. Eastern US, Western Europe, Japan)
+          const corridors = [
+            // Eastern US
+            { x1: -80, y1: 25, x2: -70, y2: 45, r: 6 },
+            // Western Europe
+            { x1: -5, y1: 45, x2: 15, y2: 55, r: 8 },
+            // Japan-Korea
+            { x1: 125, y1: 33, x2: 142, y2: 42, r: 5 },
+            // India Ganges
+            { x1: 72, y1: 20, x2: 90, y2: 28, r: 5 },
+            // China coast
+            { x1: 108, y1: 22, x2: 122, y2: 40, r: 6 },
+          ];
+          corridors.forEach(c => {
+            const [x1, y1] = ll(c.x1, c.y1);
+            const [x2, y2] = ll(c.x2, c.y2);
+            const g = ctx.createLinearGradient(x1, y1, x2, y2);
+            g.addColorStop(0, `rgba(255,180,60,${c.r * 0.012})`);
+            g.addColorStop(0.5, `rgba(255,220,120,${c.r * 0.025})`);
+            g.addColorStop(1, `rgba(255,180,60,${c.r * 0.012})`);
+            ctx.fillStyle = g;
+            const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+            const rw = Math.abs(x2 - x1) / 2 + c.r * w / 360;
+            const rh = Math.abs(y2 - y1) / 2 + c.r * h / 180;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rw, rh, Math.atan2(y2 - y1, x2 - x1), 0, Math.PI * 2);
+            ctx.fill();
+          });
+        } else {
+          // Day landmass colors
+          const landColor = '#3a6b35';
+          const landColor2 = '#4a7c42';
+          const edge = 'rgba(40,90,35,0.6)';
+
+          Object.values(LANDMASSES).forEach(pts => drawLand(pts, landColor, edge));
+
+          // Desert tinting — Sahara, Arabian
+          ctx.globalAlpha = 0.5;
+          const sahara = [[-5, 36], [5, 37], [15, 33], [25, 30], [35, 28], [38, 22], [30, 18], [20, 18], [10, 18], [-5, 18], [-10, 22], [-5, 36]];
+          drawLand(sahara, '#c8a050', null);
+          const arabia = [[35, 28], [45, 28], [55, 25], [60, 20], [50, 12], [45, 12], [37, 17], [32, 22], [35, 28]];
+          drawLand(arabia, '#c4a048', null);
+          // Australian outback
+          const outback = [[118, -20], [130, -20], [140, -25], [140, -30], [130, -32], [118, -28], [118, -20]];
+          drawLand(outback, '#b8904a', null);
+          // Gobi
+          const gobi = [[85, 40], [95, 42], [110, 42], [110, 48], [95, 48], [85, 45], [85, 40]];
+          drawLand(gobi, '#c0a060', null);
+          ctx.globalAlpha = 1;
+
+          // Mountain shading
+          ctx.globalAlpha = 0.3;
+          // Himalayas
+          const himalayas = [[68, 32], [76, 34], [80, 32], [86, 30], [90, 28], [95, 28], [96, 26], [88, 26], [80, 26], [72, 30], [68, 32]];
+          drawLand(himalayas, '#888', null);
+          // Rockies
+          const rockies = [[-125, 50], [-110, 50], [-105, 38], [-110, 32], [-118, 35], [-125, 45], [-125, 50]];
+          drawLand(rockies, '#999', null);
+          // Andes
+          const andes = [[-76, 10], [-72, 5], [-70, -15], [-68, -35], [-70, -50], [-72, -48], [-70, -30], [-72, -12], [-73, 0], [-78, 8], [-76, 10]];
+          drawLand(andes, '#999', null);
+          // Alps
+          const alps = [[5, 44], [8, 46], [12, 47], [14, 46], [12, 44], [8, 44], [5, 44]];
+          drawLand(alps, '#aaa', null);
+          ctx.globalAlpha = 1;
+
+          // Ice caps — Antarctica (white)
+          const iceGrad = ctx.createLinearGradient(0, h * 0.83, 0, h);
+          iceGrad.addColorStop(0, 'rgba(200,220,255,0)');
+          iceGrad.addColorStop(0.3, 'rgba(210,225,255,0.85)');
+          iceGrad.addColorStop(1, '#d8e8ff');
+          ctx.fillStyle = iceGrad;
+          ctx.fillRect(0, h * 0.83, w, h * 0.17);
+
+          // Arctic ice cap
+          const arcticGrad = ctx.createLinearGradient(0, 0, 0, h * 0.12);
+          arcticGrad.addColorStop(0, '#d8e8ff');
+          arcticGrad.addColorStop(0.6, 'rgba(210,225,255,0.5)');
+          arcticGrad.addColorStop(1, 'rgba(200,220,255,0)');
+          ctx.fillStyle = arcticGrad;
+          ctx.fillRect(0, 0, w, h * 0.12);
+
+          // Greenland ice
+          const [gx, gy] = ll(-42, 76);
+          const gr = w * 0.025;
+          const gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+          gg.addColorStop(0, 'rgba(220,235,255,0.9)');
+          gg.addColorStop(1, 'rgba(200,220,255,0)');
+          ctx.fillStyle = gg;
+          ctx.beginPath(); ctx.ellipse(gx, gy, gr, gr * 0.7, 0, 0, Math.PI * 2); ctx.fill();
+
+          // Ocean specular shimmer
+          ctx.globalAlpha = 0.08;
+          for (let i = 0; i < 6; i++) {
+            const shimGrad = ctx.createLinearGradient(0, h * (0.1 + i * 0.12), w, h * (0.2 + i * 0.12));
+            shimGrad.addColorStop(0, 'transparent');
+            shimGrad.addColorStop(0.5, 'rgba(200,230,255,1)');
+            shimGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = shimGrad;
+            ctx.fillRect(0, h * (0.1 + i * 0.12), w, h * 0.03);
+          }
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      function buildProceduralImages() {
+        proceduralDay = new OffscreenCanvas(W, H);
+        const pd = proceduralDay.getContext('2d');
+        drawProceduralMap(pd, W, H, false);
+
+        proceduralNight = new OffscreenCanvas(W, H);
+        const pn = proceduralNight.getContext('2d');
+        drawProceduralMap(pn, W, H, true);
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  TEXTURE LOADING (NASA HIGH RES)
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      async function loadTextures() {
+        // Use highly reliable, CORS-enabled global CDNs for Earth textures
+        const DAY_URL = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
+        const NIGHT_URL = 'https://unpkg.com/three-globe/example/img/earth-night.jpg';
+
+        try {
+          const dImg = new Image();
+          const nImg = new Image();
+
+          // Essential for parsing the image map on canvas without tainting errors in some Chrome versions
+          dImg.crossOrigin = 'anonymous';
+          nImg.crossOrigin = 'anonymous';
+
+          const p1 = new Promise((res, rej) => { dImg.onload = res; dImg.onerror = rej; dImg.src = DAY_URL; });
+          const p2 = new Promise((res, rej) => { nImg.onload = res; nImg.onerror = rej; nImg.src = NIGHT_URL; });
+
+          await Promise.all([p1, p2]);
+
+          dayImg = dImg;
+          nightImg = nImg;
+          USE_PROCEDURAL = false;
+
+          // Force an immediate redraw once loaded
+          draw();
+        } catch (e) {
+          console.error("Failed to load NASA textures from CDN", e);
+          USE_PROCEDURAL = true;
+        }
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  ISS TRACKING
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      let issPos = null;
+      let issHistory = [];
+      const ISS_HISTORY_MAX = 80;
+
+      async function fetchISS() {
+        try {
+          const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+          if (!r.ok) throw new Error('ISS Rate Limit');
+          const d = await r.json();
+          if (!d || d.latitude === undefined) throw new Error('Invalid ISS data');
+          issPos = { lat: d.latitude, lon: d.longitude, alt: d.altitude, vel: d.velocity };
+          issHistory.push({ lat: d.latitude, lon: d.longitude });
+          if (issHistory.length > ISS_HISTORY_MAX) issHistory.shift();
+          updateISSStatus();
+          const velKph = Math.round(d.velocity);
+          if (Math.random() > 0.6) updateTicker('ISS', `Velocity: ${velKph.toLocaleString()} km/h · Altitude: ${Math.round(d.altitude)} km. Status: Nominal.`);
+        } catch (e) {
+          // fallback: propagate ISS approximately using TLE-like period
+          // ISS orbits at ~51.6° inclination, ~92 min period
+          if (!issPos) {
+            const t = Date.now() / 1000;
+            const period = 92 * 60;
+            const phase = (t % period) / period;
+            issPos = {
+              lat: 51.6 * Math.sin(phase * 2 * Math.PI),
+              lon: ((t * 360 / period * 14.5) % 360) - 180,
+              alt: 408,
+              vel: 27600
+            };
+          }
+        }
+      }
+
+      function updateISSStatus() {
+        if (!issPos) return;
+        document.getElementById('iss-pos').textContent =
+          `ISS ${issPos.lat.toFixed(1)}° ${issPos.lon.toFixed(1)}°`;
+
+        const det = document.getElementById('iss-detail');
+        if (det) {
+          det.innerHTML = `
+      <div style="margin-bottom:3px">LAT  <span style="color:#fff">${issPos.lat.toFixed(2)}°</span></div>
+      <div style="margin-bottom:3px">LON  <span style="color:#fff">${issPos.lon.toFixed(2)}°</span></div>
+      <div style="margin-bottom:3px">ALT  <span style="color:#fff">${Math.round(issPos.alt)} km</span></div>
+      <div>VEL  <span style="color:#fff">${Math.round(issPos.vel)} km/h</span></div>
+    `;
+        }
+        document.getElementById('iss-status').style.display = 'block';
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  COORDINATE HELPERS (Night Centered)
+      //  Updates dynamically via mapCenterLon 
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      let mapCenterLon = 0;
+
+      function llToXY(lat, lon) {
+        let dLon = lon - mapCenterLon;
+        while (dLon < -180) dLon += 360;
+        while (dLon >= 180) dLon -= 360;
+        return { x: (dLon + 180) / 360 * W, y: (90 - lat) / 180 * H };
+      }
+
+      function xyToLL(x, y) {
+        let dLon = x / W * 360 - 180;
+        let lon = mapCenterLon + dLon;
+        while (lon < -180) lon += 360;
+        while (lon >= 180) lon -= 360;
+        return { lat: 90 - y / H * 180, lon };
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW TIMEZONE BANDS
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function drawTZBands(ctx) {
+        if (!showTZBands) return;
+        TZ_BANDS.forEach(tz => {
+          const lon1 = tz.offset * 15 - 7.5;
+          const w = (15 / 360) * W;
+          const { x } = llToXY(0, lon1);
+          const x1 = x;
+
+          const isSelected = highlightedTZ !== null && highlightedTZ.offset === tz.offset;
+          ctx.fillStyle = isSelected ? tz.color.replace(/[\d.]+\)$/, '0.5)') : tz.color;
+
+          if (x1 + w > W) {
+            ctx.fillRect(x1, 0, W - x1, H);
+            ctx.fillRect(0, 0, w - (W - x1), H);
+            if (isSelected) {
+              ctx.strokeRect(x1, 0, W - x1, H);
+              ctx.strokeRect(0, 0, w - (W - x1), H);
+            }
+            const cx1 = x1 + (W - x1) / 2;
+            const cx2 = (w - (W - x1)) / 2;
+            // Pick largest side for text
+            const cx = (W - x1 > w / 2) ? cx1 : cx2;
+            ctx.font = `${Math.max(8, W / 160)}px 'Share Tech Mono', monospace`;
+            ctx.fillStyle = 'rgba(255,220,150,0.5)';
+            ctx.textAlign = 'center';
+            ctx.fillText(tz.name, cx, H * 0.5);
+          } else {
+            ctx.fillRect(x1, 0, w, H);
+            if (isSelected) {
+              ctx.strokeRect(x1, 0, w, H);
+            }
+            const cx = x1 + w / 2;
+            ctx.font = `${Math.max(8, W / 160)}px 'Share Tech Mono', monospace`;
+            ctx.fillStyle = 'rgba(255,220,150,0.5)';
+            ctx.textAlign = 'center';
+            ctx.fillText(tz.name, cx, H * 0.5);
+          }
+          ctx.textAlign = 'left';
+        });
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW COUNTRY BORDERS (simplified river/border lines)
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      const BORDERS = [
+        // US-Canada
+        [[-141, 60], [-120, 49], [-95, 49], [-77, 44], [-74, 45]],
+        // US-Mexico
+        [[-117, 32], [-111, 31], [-105, 30], [-100, 29], [-97, 26], [-97, 26], [-90, 26]],
+        // Europe major borders (simplified)
+        [[2, 51], [3, 50], [4, 50], [5, 49], [6, 48], [7, 47], [8, 46], [9, 46], [10, 48], [12, 48], [12, 50], [14, 51], [15, 51]],
+        [[2, 51], [1, 50], [0, 49], [-1, 49], [-2, 48]],
+        // Russia borders
+        [[22, 55], [28, 55], [32, 52], [38, 50], [42, 45], [48, 42], [55, 42]],
+        [[58, 52], [65, 52], [70, 55], [80, 54], [90, 53], [100, 51]],
+        // China borders
+        [[73, 40], [80, 42], [86, 45], [92, 45], [100, 42], [104, 40], [108, 35], [110, 30], [110, 25], [108, 20]],
+        // India-Pakistan
+        [[66, 24], [70, 28], [75, 34], [78, 36]],
+        // Sudan-Egypt
+        [[24, 22], [24, 30], [25, 32]],
+        // Sahel
+        [[-5, 18], [0, 16], [5, 15], [10, 14], [15, 14], [20, 15], [25, 16]],
+        // Australia states
+        [[129, -26], [129, -20], [129, -15]],
+        [[141, -26], [141, -18]],
+        [[129, -26], [141, -26]],
+        // Brazil-Argentina
+        [[-57, -30], [-58, -34]],
+        [[-60, -15], [-65, -18], [-68, -22], [-68, -30]],
+      ];
+
+      function drawBorders(ctx) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,220,120,0.18)';
+        ctx.lineWidth = 0.7;
+        ctx.setLineDash([2, 4]);
+        BORDERS.forEach(line => {
+          ctx.beginPath();
+          let prevX = -1;
+          line.forEach(([lon, lat], i) => {
+            const { x, y } = llToXY(lat, lon);
+            if (i === 0) ctx.moveTo(x, y);
+            else {
+              if (Math.abs(x - prevX) > W / 2) { ctx.moveTo(x, y); }
+              else { ctx.lineTo(x, y); }
+            }
+            prevX = x;
+          });
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW GRID
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function drawGrid(ctx) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(160,140,80,0.1)';
+        ctx.lineWidth = 0.4;
+
+        let startLon = Math.floor((mapCenterLon - 180) / 15) * 15;
+        for (let lon = startLon; lon <= startLon + 360; lon += 15) {
+          let { x } = llToXY(0, lon);
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+        }
+        for (let lat = -90; lat <= 90; lat += 15) {
+          const y = (90 - lat) / 180 * H;
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+        // Equator
+        ctx.strokeStyle = 'rgba(200,180,100,0.2)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+        // Tropics + polars
+        ctx.setLineDash([4, 6]);
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = 'rgba(220,160,60,0.14)';
+        [23.5, -23.5, 66.5, -66.5].forEach(lat => {
+          const y = (90 - lat) / 180 * H;
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW SUN
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function drawSun(ctx, sun) {
+        if (!sun || sun.lat === undefined) return;
+        const { x, y } = llToXY(sun.lat, sun.lon);
+        if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return;
+        ctx.save();
+        const grd = ctx.createRadialGradient(x, y, 0, x, y, 28);
+        grd.addColorStop(0, 'rgba(255,240,120,1)');
+        grd.addColorStop(0.25, 'rgba(255,200,50,0.6)');
+        grd.addColorStop(1, 'rgba(255,140,0,0)');
+        ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(x, y, 28, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fffbe0'; ctx.shadowColor = '#ffd740'; ctx.shadowBlur = 14; ctx.fill();
+        ctx.strokeStyle = 'rgba(255,220,80,0.55)'; ctx.lineWidth = 1; ctx.shadowBlur = 0;
+        for (let i = 0; i < 8; i++) {
+          const a = i * Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * 8, y + Math.sin(a) * 8);
+          ctx.lineTo(x + Math.cos(a) * 15, y + Math.sin(a) * 15);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW MOON
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function drawMoon(ctx, moon) {
+        if (!moon || moon.lat === undefined) return;
+        const { x, y } = llToXY(moon.lat, moon.lon);
+        if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return;
+        ctx.save();
+        const grd = ctx.createRadialGradient(x, y, 0, x, y, 20);
+        grd.addColorStop(0, 'rgba(200,215,255,0.7)');
+        grd.addColorStop(1, 'rgba(180,200,255,0)');
+        ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#c8d8ff'; ctx.shadowColor = '#aac'; ctx.shadowBlur = 8; ctx.fill();
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW ISS
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function drawISS(ctx) {
+        if (!issPos || issPos.lat === undefined || issPos.lon === undefined) return;
+
+        let latAscending = true;
+        if (issHistory.length > 1) {
+          const last = issHistory[issHistory.length - 1];
+          const prev = issHistory[issHistory.length - 2];
+          if (last.lat < prev.lat) latAscending = false;
+        }
+
+        const i_rad = 51.6 * Math.PI / 180;
+        let arg = issPos.lat / 51.6;
+        arg = Math.max(-1, Math.min(1, arg));
+        let currentTheta = Math.asin(arg);
+        if (!latAscending) currentTheta = Math.PI - currentTheta;
+
+        const current_dLon = Math.atan2(Math.cos(i_rad) * Math.sin(currentTheta), Math.cos(currentTheta));
+        const node_lon = issPos.lon * Math.PI / 180 - current_dLon;
+
+        const period = 92.6 * 60;
+        const omega_earth = (2 * Math.PI) / 86400; // rad/sec
+
+        // Draw Future Path (Next 1 orbit)
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255,200,50,0.8)'; // Yellowish for future
+        ctx.lineWidth = 1.5;
+        let prevX = -1;
+        for (let i = 0; i <= 100; i++) {
+          const dt = (i / 100) * period;
+          const u = currentTheta + (dt / period) * 2 * Math.PI;
+          const lat_rad = Math.asin(Math.sin(i_rad) * Math.sin(u));
+          const dLon = Math.atan2(Math.cos(i_rad) * Math.sin(u), Math.cos(u));
+          let lon_rad = node_lon + dLon - omega_earth * dt;
+          let lat = lat_rad * 180 / Math.PI;
+          let lon = lon_rad * 180 / Math.PI;
+
+          const { x, y } = llToXY(lat, lon);
+          if (i === 0) ctx.moveTo(x, y);
+          else {
+            if (Math.abs(x - prevX) > W / 2) { ctx.moveTo(x, y); }
+            else { ctx.lineTo(x, y); }
+          }
+          prevX = x;
+        }
+        ctx.stroke();
+
+        // Draw Past Path (Previous 1 orbit)
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(110,255,110,0.6)'; // Greenish for past
+        ctx.setLineDash([4, 4]); // dashed for past
+        prevX = -1;
+        for (let i = 0; i <= 100; i++) {
+          const dt = -(i / 100) * period;
+          const u = currentTheta + (dt / period) * 2 * Math.PI;
+          const lat_rad = Math.asin(Math.sin(i_rad) * Math.sin(u));
+          const dLon = Math.atan2(Math.cos(i_rad) * Math.sin(u), Math.cos(u));
+          let lon_rad = node_lon + dLon - omega_earth * dt;
+          let lat = lat_rad * 180 / Math.PI;
+          let lon = lon_rad * 180 / Math.PI;
+
+          const { x, y } = llToXY(lat, lon);
+          if (i === 0) ctx.moveTo(x, y);
+          else {
+            if (Math.abs(x - prevX) > W / 2) { ctx.moveTo(x, y); }
+            else { ctx.lineTo(x, y); }
+          }
+          prevX = x;
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        const { x, y } = llToXY(issPos.lat, issPos.lon);
+        if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return;
+
+        // Calculate rotation based on previous history for realistic orientation
+        let hdg = 0;
+        if (issHistory.length > 1) {
+          const last = issHistory[issHistory.length - 1];
+          const prev = issHistory[issHistory.length - 2];
+          const p1 = llToXY(prev.lat, prev.lon);
+          // Simple screen-space heading
+          let dx = x - p1.x;
+          if (Math.abs(dx) < W / 2) hdg = Math.atan2(y - p1.y, dx);
+        }
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(hdg);
+
+        // Orbital Glow
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 96);
+        g.addColorStop(0, 'rgba(110,255,110,0.3)');
+        g.addColorStop(1, 'rgba(80,200,80,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 96, 0, Math.PI * 2); ctx.fill();
+
+        // Realistic ISS shape (4x size): 
+        // Main truss
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-40, 0); ctx.lineTo(40, 0); ctx.stroke();
+
+        // Solar arrays (4 pairs)
+        ctx.fillStyle = '#4a90e2'; // Solar panel blue
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 2;
+        const panels = [-32, -16, 16, 32];
+        panels.forEach(px => {
+          ctx.fillRect(px - 6, -36, 12, 28);  // Top array
+          ctx.strokeRect(px - 6, -36, 12, 28);
+          ctx.fillRect(px - 6, 8, 12, 28);    // Bottom array
+          ctx.strokeRect(px - 6, 8, 12, 28);
+        });
+
+        // Pressurized modules (Center)
+        ctx.fillStyle = '#dcdcdc';
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
+
+        // Label
+        ctx.rotate(-hdg); // un-rotate label
+        ctx.font = '16px Share Tech Mono'; ctx.fillStyle = 'rgba(110,255,110,0.9)'; ctx.shadowBlur = 0;
+        ctx.fillText('ISS', 48, -32);
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  DRAW CITIES
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function drawCities(ctx, sun, now) {
+        if (!showCities) return;
+        ctx.save();
+        ctx.textBaseline = 'middle';
+        ctx.font = '10px Roboto, sans-serif';
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 2.5;
+
+        CITIES.forEach(city => {
+          const { x, y } = llToXY(city.lat, city.lon);
+          if (!isFinite(x) || !isFinite(y)) return;
+
+          const angle = angularDist(city.lat, city.lon, sun.lat, sun.lon);
+          const isDay = angle < 90;
+          const markerR = city.cap ? 2.8 : 2.0;
+          const fill = isDay ? 'rgba(255,244,170,0.85)' : 'rgba(255,188,92,0.9)';
+          const textColor = isDay ? 'rgba(250,248,230,0.72)' : 'rgba(255,220,150,0.9)';
+
+          ctx.beginPath();
+          ctx.fillStyle = fill;
+          ctx.arc(x, y, markerR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeText(city.n, x + 5, y);
+          ctx.fillStyle = textColor;
+          ctx.fillText(city.n, x + 5, y);
+        });
+        ctx.restore();
+      }
+
+      function drawUserLocation(ctx) {
+        if (!userLocation.enabled || !Number.isFinite(userLocation.lat) || !Number.isFinite(userLocation.lon)) return;
+        const { x, y } = llToXY(userLocation.lat, userLocation.lon);
+        if (!isFinite(x) || !isFinite(y)) return;
+
+        const pulse = 0.65 + 0.35 * Math.sin(Date.now() / 300);
+        const r = 8 + pulse * 5;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(90,180,255,${0.12 + pulse * 0.1})`;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(120,210,255,0.95)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.font = '11px Roboto, sans-serif';
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+        ctx.strokeText('YOU', x + 8, y - 12);
+        ctx.fillStyle = 'rgba(170,225,255,0.95)';
+        ctx.fillText('YOU', x + 8, y - 12);
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  NIGHT SHADOW MASK
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      const SHADOW_SCALE = 4;
+      let shadowCanvas = null, shadowCtx = null;
+
+      function buildShadowMask(sun) {
+        const sw = Math.ceil(W / SHADOW_SCALE);
+        const sh = Math.ceil(H / SHADOW_SCALE);
+        if (!shadowCanvas || shadowCanvas.width !== sw || shadowCanvas.height !== sh) {
+          shadowCanvas = new OffscreenCanvas(sw, sh);
+          shadowCtx = shadowCanvas.getContext('2d');
+        }
+        const imgData = shadowCtx.createImageData(sw, sh);
+        const px = imgData.data;
+
+        for (let py = 0; py < sh; py++) {
+          const lat = 90 - py / sh * 180;
+          for (let ppx = 0; ppx < sw; ppx++) {
+            const dLon = ppx / sw * 360 - 180;
+            let lon = mapCenterLon + dLon;
+            while (lon < -180) lon += 360;
+            while (lon >= 180) lon -= 360;
+            const angle = angularDist(lat, lon, sun.lat, sun.lon);
+            const i = (py * sw + ppx) * 4;
+            let alpha;
+            if (angle < 90) {
+              alpha = 0;
+            } else if (angle > 97) {
+              alpha = 180; // Peak night transparency reduced (from 255)
+            } else {
+              alpha = ((angle - 90) / 7) * 180;
+            }
+            // Twilight warm tint at terminator
+            const twiAmt = angle >= 90 && angle <= 94 ? 1 - (angle - 90) / 4 : 0;
+            px[i] = Math.round(8 + twiAmt * 60);
+            px[i + 1] = Math.round(4 + twiAmt * 20);
+            px[i + 2] = Math.round(20 + twiAmt * 10);
+            px[i + 3] = Math.round(alpha * (1 - twiAmt * 0.3));
+          }
+        }
+        shadowCtx.putImageData(imgData, 0, 0);
+        return shadowCanvas;
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  LIVE OVERLAYS ENGINE (REAL API DATA)
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      const overlays = {
+        aurora: { enabled: false, data: [] },
+        flights: { enabled: true, data: [], lastFetch: 0, militaryOnly: false },
+        quakes: { enabled: true, data: [], lastFetch: 0 }
+      };
+
+      ['aurora', 'flights', 'quakes'].forEach(id => {
+        const el = document.getElementById(`toggle-${id}`);
+        if (el) {
+          el.addEventListener('change', e => {
+            overlays[id].enabled = e.target.checked;
+            if (id === 'flights' && e.target.checked) {
+              initFlights();
+              const badge = document.getElementById('flight-count');
+              if (badge) {
+                badge.style.cursor = 'pointer';
+                badge.title = 'Click to force refresh';
+                badge.onclick = (ev) => { ev.stopPropagation(); initFlights(); };
+              }
+            }
+            if (id === 'aurora' && e.target.checked) initAurora();
+            if (id === 'quakes' && e.target.checked) initQuakes();
+            if (!e.target.checked) overlays[id].data = [];
+          });
+        }
+      });
+
+      // â”€â”€â”€ Aurora Borealis / Australis — NOAA SWPC Ovation Model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const citiesToggle = document.getElementById('toggle-cities');
+      if (citiesToggle) {
+        citiesToggle.checked = showCities;
+        citiesToggle.addEventListener('change', e => {
+          showCities = e.target.checked;
+          updateTicker('CITIES', showCities ? `Displaying ${CITIES.length} stored cities.` : 'City overlay hidden.');
+          draw();
+        });
+      }
+
+      const locationStatusEl = document.getElementById('location-status');
+      const locationToggle = document.getElementById('toggle-location');
+      function setLocationStatus(text, title = '') {
+        if (!locationStatusEl) return;
+        locationStatusEl.textContent = text || '';
+        locationStatusEl.title = title || '';
+      }
+
+      function hasUserLocation() {
+        return userLocation.enabled && Number.isFinite(userLocation.lat) && Number.isFinite(userLocation.lon);
+      }
+
+      function requestUserLocation() {
+        return new Promise(resolve => {
+          if (!navigator.geolocation) {
+            setLocationStatus('(Unsupported)');
+            updateTicker('LOCATION', 'Geolocation is not available in this browser.');
+            resolve(false);
+            return;
+          }
+
+          setLocationStatus('(Requesting...)');
+          navigator.geolocation.getCurrentPosition(
+            pos => {
+              userLocation.enabled = true;
+              userLocation.lat = pos.coords.latitude;
+              userLocation.lon = pos.coords.longitude;
+              userLocation.accuracyM = pos.coords.accuracy || null;
+              userLocation.ts = Date.now();
+              const tip = `${userLocation.lat.toFixed(4)}, ${userLocation.lon.toFixed(4)}`
+                + (userLocation.accuracyM ? ` ±${Math.round(userLocation.accuracyM)}m` : '');
+              setLocationStatus('(Locked)', tip);
+              updateTicker('LOCATION', `Locked to ${userLocation.lat.toFixed(2)}°, ${userLocation.lon.toFixed(2)}°. Nearby flight mode enabled.`);
+              resolve(true);
+            },
+            err => {
+              userLocation.enabled = false;
+              const msg = err && err.code === 1 ? '(Denied)' : '(Unavailable)';
+              setLocationStatus(msg);
+              updateTicker('LOCATION', 'Location permission denied/unavailable.');
+              resolve(false);
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 }
+          );
+        });
+      }
+
+      if (locationToggle) {
+        if (!navigator.geolocation) {
+          locationToggle.disabled = true;
+          setLocationStatus('(Unsupported)');
+        }
+        locationToggle.addEventListener('change', async e => {
+          if (e.target.checked) {
+            const ok = await requestUserLocation();
+            if (!ok) {
+              e.target.checked = false;
+              return;
+            }
+            overlays.flights.lastFetch = 0;
+            if (overlays.flights.enabled) initFlights();
+            draw();
+          } else {
+            userLocation.enabled = false;
+            setLocationStatus('');
+            overlays.flights.lastFetch = 0;
+            if (overlays.flights.enabled) initFlights();
+            draw();
+            updateTicker('LOCATION', 'Location sharing disabled.');
+          }
+        });
+      }
+
+      const militaryToggle = document.getElementById('toggle-military');
+      if (militaryToggle) {
+        militaryToggle.checked = overlays.flights.militaryOnly;
+        militaryToggle.addEventListener('change', e => {
+          overlays.flights.militaryOnly = e.target.checked;
+          overlays.flights.lastFetch = 0;
+          updateTicker('FLIGHTS', e.target.checked
+            ? 'Military-only flight filter enabled.'
+            : 'Military-only flight filter disabled.');
+          if (overlays.flights.enabled) initFlights();
+          draw();
+        });
+      }
+
+      function initAurora() {
+        fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json')
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.coordinates) {
+              // Each coordinate: [lon, lat, aurora_probability_0-100]
+              overlays.aurora.data = data.coordinates.filter(c => c[2] > 3);
+              updateTicker('AURORA', `Updated ovation model: ${overlays.aurora.data.length} datapoints active.`);
+            }
+          })
+          .catch(() => { });
+        // Re-fetch every 5 minutes (NOAA updates on same cadence)
+        setTimeout(() => { if (overlays.aurora.enabled) initAurora(); }, 5 * 60 * 1000);
+      }
+
+      function drawAurora(ctx) {
+        if (!overlays.aurora.enabled || !overlays.aurora.data.length) return;
+        ctx.save();
+
+        const pointSize = Math.max(2, W / 240); // slightly smaller dots for detail
+
+        // We limit the number of radial gradients for performance
+        // Processing 14,000 gradients every frame kills fps.
+        // We only use gradients for High probability, simple dots for others.
+
+        overlays.aurora.data.forEach((c, i) => {
+          const lon = c[0], lat = c[1], prob = c[2];
+          const { x, y } = llToXY(lat, lon);
+
+          if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return;
+
+          const alpha = Math.min(0.9, prob / 80);
+
+          if (prob > 25 && i % 4 === 0) { // Only high-prob or every Nth point gets expensive glow
+            const g = ctx.createRadialGradient(x, y, 0, x, y, pointSize * 3);
+            g.addColorStop(0, `rgba(80,255,140,${alpha})`);
+            g.addColorStop(0.6, `rgba(60,200,255,${alpha * 0.4})`);
+            g.addColorStop(1, 'rgba(120,40,255,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(x, y, pointSize * 3, 0, Math.PI * 2); ctx.fill();
+          } else {
+            // Basic Glow-dot for efficiency
+            ctx.fillStyle = `rgba(100,255,160,${alpha * 0.5})`;
+            ctx.beginPath(); ctx.arc(x, y, pointSize, 0, Math.PI * 2); ctx.fill();
+          }
+        });
+        ctx.restore();
+      }
+
+      // --- Live Flights (OpenSky with Airplanes.live fallback) -----------------
+      //
+      // OpenSky offers global snapshots but is frequently rate-limited.
+      // Airplanes.live is used as a CORS-friendly fallback via regional point queries.
+      // Both payloads are normalized into one internal flight shape.
+      //
+      const TRAIL_LEN = 5;                    // points to remember
+      const FLIGHT_REFRESH_MS = 180000;       // 3 min keeps fallback usage under free-tier limits
+      const FLIGHT_MIN_COOLDOWN_MS = 15000;   // force-refresh guard
+      const OPENSKY_BACKOFF_MS = 30 * 60 * 1000;
+      const AIRPLANES_RADIUS_NM = 250;
+      const AIRPLANES_LOCAL_RADIUS_NM = 180;
+      const AIRPLANES_QUERY_LAT = 35;         // bias towards busiest corridor latitudes
+      const HIT_RADIUS = 8;                   // px click tolerance
+
+      const _flightMap = new Map();           // icao24 -> Object
+      let _flightTimer = null;
+      let _flightFetching = false;            // guard
+      let _selectedFlight = null;
+      let _hoveredFlight = null;
+      let _flightProvider = 'OpenSky';
+      let _openSkyRetryAfter = 0;
+      const _flightPopup = document.getElementById('flight-popup');
+      const OPENSKY_FIELDS = [
+        'icao24', 'callsign', 'origin_country', 'time_position', 'last_contact',
+        'longitude', 'latitude', 'baro_altitude', 'on_ground', 'velocity',
+        'true_track', 'vertical_rate', 'sensors', 'geo_altitude', 'squawk',
+        'spi', 'position_source'
+      ];
+
+      function _escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function _formatFlightVal(v) {
+        if (v === null || v === undefined || v === '') return '—';
+        if (typeof v === 'number') {
+          if (!Number.isFinite(v)) return '—';
+          if (Number.isInteger(v)) return v.toString();
+          return v.toFixed(3).replace(/\.?0+$/, '');
+        }
+        if (typeof v === 'boolean') return v ? 'true' : 'false';
+        if (Array.isArray(v)) return v.length ? v.join(', ') : '[]';
+        if (typeof v === 'object') return JSON.stringify(v);
+        return String(v);
+      }
+
+      function _openSkyStateToObject(s) {
+        const out = {};
+        for (let i = 0; i < OPENSKY_FIELDS.length; i++) out[OPENSKY_FIELDS[i]] = s[i];
+        for (let i = OPENSKY_FIELDS.length; i < s.length; i++) out[`field_${i}`] = s[i];
+        return out;
+      }
+
+      function _projectFlightToScreen(f, nowMs = Date.now()) {
+        const ageSec = (nowMs - f.lastReal) / 1000;
+        const speedDeg = (f.vel || 230) / 111111;
+        const curLat = f.lat + Math.cos(f._rawHdg * RAD) * speedDeg * ageSec;
+        let curLon = f.lon + Math.sin(f._rawHdg * RAD) * speedDeg * ageSec / Math.cos(f.lat * RAD);
+        if (curLon > 180) curLon -= 360; else if (curLon < -180) curLon += 360;
+        return llToXY(Math.max(-85, Math.min(85, curLat)), curLon);
+      }
+
+      function _findNearestFlight(cx, cy, radius = HIT_RADIUS + 2) {
+        if (!overlays.flights.enabled || !_flightMap.size) return null;
+        const now = Date.now();
+        let closest = null;
+        let closestD = radius;
+        _flightMap.forEach(f => {
+          const p = _projectFlightToScreen(f, now);
+          const d = Math.hypot(p.x - cx, p.y - cy);
+          if (d < closestD) { closest = f; closestD = d; }
+        });
+        return closest;
+      }
+
+      function _buildFlightPopupHTML(f) {
+        const altFt = f.altM ? Math.round(f.altM * 3.28084) : 0;
+        const speedKts = Math.round((f.vel || 0) * 1.94384);
+        const raw = f.raw && typeof f.raw === 'object' ? f.raw : {};
+        const rows = Object.keys(raw).sort().map(k => {
+          const v = _escapeHtml(_formatFlightVal(raw[k]));
+          return `<div class="fp-row"><span class="fp-label">${_escapeHtml(k)}</span><span class="fp-val">${v}</span></div>`;
+        }).join('');
+
+        return `
+          <div class="fp-callsign">${_escapeHtml(f.callsign || f.icao)}</div>
+          <div class="fp-row"><span class="fp-label">PROVIDER</span><span class="fp-val">${_escapeHtml(f.provider || _flightProvider)}</span></div>
+          <div class="fp-row"><span class="fp-label">ICAO</span><span class="fp-val" style="font-family:monospace;">${_escapeHtml((f.icao || '').toUpperCase())}</span></div>
+          <div class="fp-row"><span class="fp-label">ORIGIN</span><span class="fp-val">${_escapeHtml(f.origin || '—')}</span></div>
+          <div class="fp-row"><span class="fp-label">ALT</span><span class="fp-val">${altFt.toLocaleString()} ft</span></div>
+          <div class="fp-row"><span class="fp-label">SPD</span><span class="fp-val">${speedKts} kts</span></div>
+          <div class="fp-row"><span class="fp-label">HDG</span><span class="fp-val">${Math.round(f._rawHdg || 0)}°</span></div>
+          <div class="fp-row" style="margin-top:7px;border-top:1px solid rgba(255,255,255,0.12);padding-top:7px;"><span class="fp-label">RAW API DATA</span><span class="fp-val">${Object.keys(raw).length} fields</span></div>
+          ${rows || '<div class="fp-row"><span class="fp-label">RAW</span><span class="fp-val">—</span></div>'}
+        `;
+      }
+
+      function _showFlightPopup(f, cx, cy) {
+        if (!f || !_flightPopup) return;
+        _flightPopup.innerHTML = _buildFlightPopupHTML(f);
+        _flightPopup.style.display = 'block';
+        _flightPopup.style.left = Math.min(cx + 16, window.innerWidth - 430) + 'px';
+        _flightPopup.style.top = Math.min(cy + 8, window.innerHeight - 300) + 'px';
+      }
+
+      function _hideFlightPopup() {
+        if (_flightPopup) _flightPopup.style.display = 'none';
+      }
+
+      function _toNum(v, fallback = 0) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function _normLon(lon) {
+        let out = _toNum(lon, 0);
+        while (out < -180) out += 360;
+        while (out >= 180) out -= 360;
+        return out;
+      }
+
+      function _distanceNm(lat1, lon1, lat2, lon2) {
+        const rKm = 6371;
+        const dLat = (lat2 - lat1) * RAD;
+        const dLon = (lon2 - lon1) * RAD;
+        const a = Math.sin(dLat / 2) ** 2
+          + Math.cos(lat1 * RAD) * Math.cos(lat2 * RAD) * Math.sin(dLon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const km = rKm * c;
+        return km * 0.539957;
+      }
+
+      function _airplanesPointUrl() {
+        const local = hasUserLocation();
+        const lat = local ? _toNum(userLocation.lat, AIRPLANES_QUERY_LAT) : AIRPLANES_QUERY_LAT;
+        const lon = local ? _normLon(userLocation.lon) : _normLon(mapCenterLon);
+        const radius = local ? AIRPLANES_LOCAL_RADIUS_NM : AIRPLANES_RADIUS_NM;
+        return `https://api.airplanes.live/v2/point/${lat.toFixed(2)}/${lon.toFixed(2)}/${radius}`;
+      }
+
+      function _fromOpenSky(s) {
+        if (!s || !s[0]) return null;
+        const lon = _toNum(s[5], NaN);
+        const lat = _toNum(s[6], NaN);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        const icao = String(s[0]).toLowerCase();
+        const raw = _openSkyStateToObject(s);
+        return {
+          provider: 'OpenSky',
+          icao,
+          callsign: (s[1] || '').trim() || icao.toUpperCase(),
+          origin: s[2] || '',
+          lat,
+          lon,
+          altM: _toNum(s[7], 0),
+          hdg: _toNum(s[10], 0),
+          vel: _toNum(s[9], 0),
+          _rawHdg: _toNum(s[10], 0),
+          raw
+        };
+      }
+
+      function _fromAirplanes(a) {
+        if (!a || !a.hex) return null;
+        const lat = _toNum(a.lat, NaN);
+        const lon = _toNum(a.lon, NaN);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        const icao = String(a.hex).toLowerCase();
+        const gsKts = _toNum(a.gs, 0);
+        const altFt = _toNum(a.alt_baro, 0);
+        const track = _toNum(a.track, 0);
+        return {
+          provider: 'Airplanes.live',
+          icao,
+          callsign: (a.flight || a.r || '').trim() || icao.toUpperCase(),
+          origin: a.ownOp || a.t || '',
+          lat,
+          lon,
+          altM: altFt * 0.3048,
+          hdg: track,
+          vel: gsKts / 1.94384, // convert knots -> m/s for existing projection math
+          _rawHdg: track,
+          raw: { ...a }
+        };
+      }
+
+      async function _fetchOpenSkyFlights() {
+        const res = await fetch('https://opensky-network.org/api/states/all');
+        if (res.status === 429) throw new Error('OPENSKY_429');
+        if (!res.ok) throw new Error(`OPENSKY_HTTP_${res.status}`);
+        const data = await res.json();
+        const states = (data && Array.isArray(data.states)) ? data.states : [];
+        return states.map(_fromOpenSky).filter(Boolean);
+      }
+
+      async function _fetchAirplanesFlights() {
+        const res = await fetch(_airplanesPointUrl());
+        if (res.status === 429) throw new Error('AIRPLANES_429');
+        if (!res.ok) throw new Error(`AIRPLANES_HTTP_${res.status}`);
+        const data = await res.json();
+        const ac = (data && Array.isArray(data.ac)) ? data.ac : [];
+        return ac.map(_fromAirplanes).filter(Boolean);
+      }
+
+      async function _fetchAirplanesMilitaryFlights() {
+        const res = await fetch('https://api.airplanes.live/v2/mil');
+        if (res.status === 429) throw new Error('AIRPLANES_429');
+        if (!res.ok) throw new Error(`AIRPLANES_HTTP_${res.status}`);
+        const data = await res.json();
+        const ac = (data && Array.isArray(data.ac)) ? data.ac : [];
+        return ac.map(_fromAirplanes).filter(Boolean);
+      }
+
+      function _altColour(altM) {
+        if (!altM || altM < 100) return 'rgba(120,120,120,0.7)'; // Ground/Low
+        if (altM < 3000) return 'rgba(80,220,255,0.8)';   // <10k ft
+        if (altM < 8000) return 'rgba(150,255,150,0.8)';  // <26k ft
+        if (altM < 11000) return 'rgba(255,220,80,0.8)';   // Cruise
+        return 'rgba(220,150,255,0.8)';  // High
+      }
+
+      async function initFlights() {
+        if (!overlays.flights.enabled || _flightFetching) return;
+
+        const now = Date.now();
+        // Strict minimum cooldown even if triggered manually
+        if (now - overlays.flights.lastFetch < FLIGHT_MIN_COOLDOWN_MS) {
+          const badge = document.getElementById('flight-count');
+          if (badge) badge.textContent = '(Cooldown)';
+          return;
+        }
+
+        _flightFetching = true;
+        const badge = document.getElementById('flight-count');
+        if (badge) badge.textContent = '(Syncing...)';
+
+        try {
+          let flights = [];
+          let source = '';
+          const localMode = hasUserLocation();
+          const militaryOnly = overlays.flights.militaryOnly === true;
+
+          if (militaryOnly) {
+            flights = await _fetchAirplanesMilitaryFlights();
+            source = localMode ? 'Airplanes.live MIL (Local)' : 'Airplanes.live MIL';
+            if (localMode) {
+              const refLat = _toNum(userLocation.lat, NaN);
+              const refLon = _toNum(userLocation.lon, NaN);
+              if (Number.isFinite(refLat) && Number.isFinite(refLon)) {
+                flights = flights.filter(f => _distanceNm(refLat, refLon, f.lat, f.lon) <= AIRPLANES_LOCAL_RADIUS_NM);
+              }
+            }
+          } else {
+            if (!localMode && Date.now() >= _openSkyRetryAfter) {
+              try {
+                flights = await _fetchOpenSkyFlights();
+                source = 'OpenSky';
+              } catch (err) {
+                if (err.message === 'OPENSKY_429') _openSkyRetryAfter = Date.now() + OPENSKY_BACKOFF_MS;
+                else _openSkyRetryAfter = Date.now() + 10 * 60 * 1000;
+              }
+            }
+
+            if (!flights.length) {
+              flights = await _fetchAirplanesFlights();
+              source = localMode ? 'Airplanes.live (Local)' : 'Airplanes.live';
+            }
+          }
+
+          _flightProvider = source;
+          overlays.flights.lastFetch = Date.now();
+          if (!flights.length) {
+            if (badge) badge.textContent = '(No Data)';
+            _flightFetching = false;
+            return;
+          }
+
+          const now = Date.now();
+          const seen = new Set();
+          const CHUNK = 800;
+          let idx = 0;
+
+          function process() {
+            const end = Math.min(idx + CHUNK, flights.length);
+            for (; idx < end; idx++) {
+              const f = flights[idx];
+              const icao = f.icao;
+              seen.add(icao);
+
+              const existing = _flightMap.get(icao);
+              let trail = existing ? existing.trail : [];
+              if (existing && (Math.abs(existing.lat - f.lat) > 0.01 || Math.abs(existing.lon - f.lon) > 0.01)) {
+                trail.push({ lat: existing.lat, lon: existing.lon });
+                if (trail.length > TRAIL_LEN) trail.shift();
+              }
+
+              _flightMap.set(icao, {
+                provider: _flightProvider,
+                icao,
+                callsign: f.callsign,
+                origin: f.origin,
+                lat: f.lat,
+                lon: f.lon,
+                altM: f.altM,
+                hdg: f.hdg,
+                vel: f.vel,
+                trail,
+                lastReal: now,
+                _rawHdg: f._rawHdg,
+                raw: f.raw || {}
+              });
+            }
+
+            if (idx < flights.length) {
+              setTimeout(process, 16);
+            } else {
+              for (let [icao, f] of _flightMap) {
+                if (!seen.has(icao)) _flightMap.delete(icao);
+              }
+              if (badge) badge.textContent = `(${_flightMap.size}${localMode ? ' Local' : ''}${militaryOnly ? ' Mil' : ''})`;
+              updateTicker('FLIGHTS', `Traffic Pulse: Tracking ${_flightMap.size} aircraft via ${_flightProvider}.`);
+              _flightFetching = false;
+            }
+          }
+          process();
+
+        } catch (e) {
+          _flightFetching = false;
+          if (badge) {
+            if (e.message === 'AIRPLANES_429' || e.message === 'OPENSKY_429') {
+              badge.textContent = '(Rate Limited)';
+              updateTicker('SYSTEM', 'Flight API rate limit hit. Retrying on next cycle.');
+            } else {
+              badge.textContent = '(Offline/Retry)';
+            }
+          }
+        } finally {
+          clearTimeout(_flightTimer);
+          if (overlays.flights.enabled) _flightTimer = setTimeout(initFlights, FLIGHT_REFRESH_MS);
+        }
+      }
+
+      function drawFlights(ctx) {
+        if (!overlays.flights.enabled || !_flightMap.size) return;
+        ctx.save();
+
+        const now = Date.now();
+        _flightMap.forEach(f => {
+          const { x, y } = _projectFlightToScreen(f, now);
+          if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return;
+          const color = _altColour(f.altM);
+
+          // Draw Trail
+          if (f.trail.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = color.replace('0.8)', '0.2)').replace('0.7)', '0.2)');
+            ctx.lineWidth = 1;
+            let prevX = 0, first = true;
+            f.trail.forEach(p => {
+              const pt = llToXY(p.lat, p.lon);
+              if (first) ctx.moveTo(pt.x, pt.y);
+              else if (Math.abs(pt.x - prevX) < W / 2) ctx.lineTo(pt.x, pt.y);
+              else ctx.moveTo(pt.x, pt.y);
+              prevX = pt.x;
+              first = false;
+            });
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+
+          // Draw Plane
+          const isSelected = (_selectedFlight === f.icao);
+          const size = isSelected ? 4 : 2;
+
+          ctx.fillStyle = color;
+          if (isSelected) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#fff';
+          } else {
+            ctx.shadowBlur = 0;
+          }
+
+          // Low altitude/selected = detailed chevron, others = dots for performance
+          if (isSelected || f.altM < 1000) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(f._rawHdg * RAD);
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 2); ctx.lineTo(-size, size); ctx.lineTo(0, size * 0.5); ctx.lineTo(size, size);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          } else {
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        ctx.restore();
+      }
+
+
+      // â”€â”€ Click detection for flight popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      canvas.addEventListener('click', function _flightClick(e) {
+        if (!overlays.flights.enabled) return;
+        const cx = e.clientX, cy = e.clientY;
+        const closest = _findNearestFlight(cx, cy, HIT_RADIUS + 2);
+
+        if (closest) {
+          e.stopImmediatePropagation();
+          _selectedFlight = closest.icao;
+          _showFlightPopup(closest, cx, cy);
+        } else {
+          _selectedFlight = null;
+          _hideFlightPopup();
+        }
+      }, false);
+
+
+      // â”€â”€â”€ Earthquakes — USGS GeoJSON All-Day Feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      let _quakeRefreshTimer = null;
+      function initQuakes() {
+        const now = Date.now();
+        if (now - overlays.quakes.lastFetch < 60000) return;
+        overlays.quakes.lastFetch = now;
+        fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson')
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.features) {
+              overlays.quakes.data = data.features.map(f => ({
+                lat: f.geometry.coordinates[1],
+                lon: f.geometry.coordinates[0],
+                mag: f.properties.mag || 1,
+                place: f.properties.place || '',
+                r: 0,
+                pulse: Math.random() * Math.PI * 2  // stagger animation phase
+              }));
+              if (overlays.quakes.data.length > 0) {
+                const latest = overlays.quakes.data[0];
+                updateTicker('QUAKES', `Latest Event: M${latest.mag.toFixed(1)} - ${latest.place}. Monitoring ${overlays.quakes.data.length} global stations.`);
+              }
+            }
+          })
+          .catch(() => { });
+        clearTimeout(_quakeRefreshTimer);
+        _quakeRefreshTimer = setTimeout(() => { if (overlays.quakes.enabled) initQuakes(); }, 5 * 60 * 1000);
+      }
+
+      function drawQuakes(ctx) {
+        if (!overlays.quakes.enabled || !overlays.quakes.data.length) return;
+        ctx.save();
+        overlays.quakes.data.forEach(q => {
+          q.pulse += 0.04;
+          const { x, y } = llToXY(q.lat, q.lon);
+          if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return;
+
+          const isHovered = (hoveredQuake === q);
+          const maxR = Math.max(6, q.mag * 8) * (isHovered ? 1.5 : 1);
+          const pr = (Math.sin(q.pulse) * 0.5 + 0.5) * maxR;
+          const alpha = Math.max(0.1, 1 - pr / maxR);
+
+          if (isHovered) {
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+          }
+
+          // Pulsing ring
+          ctx.beginPath();
+          ctx.strokeStyle = q.mag >= 5 ? `rgba(255,80,50,${alpha})` : `rgba(255,200,50,${alpha})`;
+          ctx.lineWidth = (q.mag >= 5 ? 3 : 1.5) * (isHovered ? 2 : 1);
+          ctx.arc(x, y, pr, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Core dot (always visible)
+          ctx.beginPath();
+          ctx.fillStyle = q.mag >= 5 ? '#ff3030' : '#ffcf33';
+          ctx.arc(x, y, Math.max(2, q.mag * 0.8) * (isHovered ? 1.5 : 1), 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isHovered) ctx.restore();
+        });
+        ctx.restore();
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  MAIN DRAW
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function draw() {
+        const now = new Date();
+        const ms = now.getTime();
+        const sun = solarPosition(ms);
+        const moon = lunarPosition(ms);
+
+        // Center map dynamically on Night (Anti-Solar Point)
+        mapCenterLon = sun.lon + 180;
+        if (mapCenterLon > 180) mapCenterLon -= 360;
+
+        // Calculate where the 0-longitude center of the image should map to on the canvas
+        let cx0 = llToXY(0, 0).x;
+        let leftEdge = cx0 - W / 2;
+
+        // Helper to repeatedly draw wrapping background textures so gaps are seamlessly filled
+        function drawWrappingImage(ctxTarget, img) {
+          ctxTarget.drawImage(img, leftEdge, 0, W, H);
+          if (leftEdge > 0) ctxTarget.drawImage(img, leftEdge - W, 0, W, H);
+          if (leftEdge + W < W) ctxTarget.drawImage(img, leftEdge + W, 0, W, H);
+        }
+
+        // Day base
+        offCtx.clearRect(0, 0, W, H);
+        if (USE_PROCEDURAL) {
+          drawWrappingImage(offCtx, proceduralDay);
+        } else {
+          drawWrappingImage(offCtx, dayImg);
+        }
+
+        // TZ bands (below night shadow so they show on day side)
+        drawTZBands(offCtx);
+
+        // Grid
+        drawGrid(offCtx);
+
+        // Borders
+        drawBorders(offCtx);
+
+        // Night shadow / composite
+        const shadow = buildShadowMask(sun);
+        offCtx.save();
+
+        if (USE_PROCEDURAL) {
+          offCtx.globalCompositeOperation = 'source-over';
+          const tmp = new OffscreenCanvas(W, H);
+          const tc = tmp.getContext('2d');
+          drawWrappingImage(tc, proceduralNight);
+          tc.globalCompositeOperation = 'destination-in';
+          tc.drawImage(shadow, 0, 0, W, H);
+          offCtx.drawImage(tmp, 0, 0);
+        } else {
+          // High RES mode uses the real NASA night texture and blends via masking
+          const tmp = new OffscreenCanvas(W, H);
+          const tc = tmp.getContext('2d');
+          drawWrappingImage(tc, nightImg);
+
+          // Add a layer of pure shadow darkness to simulate the real atmospheric darkness
+          tc.globalCompositeOperation = 'source-over';
+          tc.fillStyle = 'rgba(0, 2, 8, 0.25)';  // Reduced from 0.4
+          tc.fillRect(0, 0, W, H);
+
+          tc.globalCompositeOperation = 'destination-in';
+          tc.drawImage(shadow, 0, 0, W, H);
+
+          offCtx.globalCompositeOperation = 'source-over';
+          offCtx.drawImage(tmp, 0, 0);
+
+          // Also draw the shadow directly slightly to darken the transition edge
+          offCtx.globalAlpha = 0.35; // Reduced from 0.6
+          offCtx.drawImage(shadow, 0, 0, W, H);
+          offCtx.globalAlpha = 1.0;
+        }
+        offCtx.restore();
+
+        // Moon
+        drawMoon(offCtx, moon);
+
+        // Sun
+        drawSun(offCtx, sun);
+
+        // ISS
+        drawISS(offCtx);
+
+        // Cities
+        drawCities(offCtx, sun, now);
+        drawUserLocation(offCtx);
+
+        // Top Level Overlays — Drawn LAST on top of everything
+        drawFlights(offCtx);
+        drawAurora(offCtx);
+        drawQuakes(offCtx);
+
+        // Flush
+        ctx.clearRect(0, 0, W, H);
+        ctx.drawImage(offscreen, 0, 0);
+
+        // UI
+        updateUI(now, sun, moon);
+      }
+
+      const BANDS = ['Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N'];
+      const B_REV = [...BANDS].reverse();
+      const TAB_LETTERS = [...B_REV, ...B_REV]; // 48 items
+
+      function initRuler() {
+        const rs = document.getElementById('ruler-strip');
+        const ts = document.getElementById('tabs-strip');
+        if (!rs || !ts) return;
+
+        let rHTML = '';
+        let tHTML = '';
+
+        // We generate 48 segments (2 worlds) so we can smoothly shift it.
+        for (let i = 0; i < 48; i++) {
+          const hr = (24 - (i % 24)) % 24;
+          const hr12 = hr === 0 ? 12 : (hr > 12 ? hr - 12 : hr);
+          const isPM = hr >= 12 && hr !== 24;
+
+          let ticksHTML = '';
+          for (let j = 0; j < 4; j++) {
+            ticksHTML += `<div class="ruler-tick${j === 0 ? ' major' : ''}" style="left:${j * 25}%;"></div>`;
+          }
+
+          rHTML += `
+          <div class="ruler-segment">
+             ${ticksHTML}
+             <div class="ruler-num" style="left:0;">${hr12}</div>
+             <div class="ruler-dst" style="left:0;">DST ${hr12}</div>
+          </div>
+        `;
+
+          tHTML += `<div class="tz-tab">${TAB_LETTERS[i]}</div>`;
+        }
+        rs.innerHTML = rHTML;
+        ts.innerHTML = tHTML;
+      }
+
+      function updateUI(now, sun, moon) {
+        if (!document.getElementById('ruler-strip').innerHTML) initRuler();
+
+        // Update Time and Date displays
+        document.getElementById('time-display').textContent = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+        document.getElementById('date-display').textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        // Dateline calculation (left side is typically the later day in Pacific view)
+        const dayIndex = now.getUTCDay();
+        const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        document.getElementById('day-west').innerHTML = `&#9668; ${DAYS[(dayIndex + 1) % 7]}`;
+        document.getElementById('day-east').innerHTML = `${DAYS[dayIndex]} &#9658;`;
+
+        // Scroll the Top Ruler and Tabs based on UTC time!
+        // In a Pacific-centered map, long=180 is in the middle. The time at long 180 is UTC+12.
+        // Every minute, the sun moves westward (left). The ruler should slide based on fractional hours.
+        const ms = now.getTime();
+        const fracDay = (ms % 86400000) / 86400000;
+
+        // At UTC midnight (fracDay=0), London (lon=0, wrapped at edges) is midnight.
+        // The offset in the 48-item strip needs to match up the ruler to the map properly.
+        const rs = document.getElementById('ruler-strip');
+        const ts = document.getElementById('tabs-strip');
+
+        // The map width is W. A 24-hour cycle is exactly W wide. 
+        // The ruler strip is 200vw wide (48 hours).
+        // We offset it so the correct local time lines up exactly over the map.
+        const shiftPct = (fracDay * 100) % 100;
+        rs.style.transform = `translateX(-${shiftPct / 2}%)`;
+        ts.style.transform = `translateX(-${shiftPct / 2}%)`;
+      }
+
+      // Helper for TZ panel
+      function pad(num) { return num < 10 ? '0' + num : num; }
+      function formatTime(date, tz) {
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  TIMEZONE PANEL
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function openTZPanel(tz) {
+        highlightedTZ = tz;
+        const panel = document.getElementById('tz-panel');
+        document.getElementById('tz-name').textContent = tz.name + ' — ' + tz.label;
+        const now = new Date();
+        const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+        const tzTime = new Date(utcMs + tz.offset * 3600000);
+        const cities = CITIES.filter(c => {
+          const offLon = c.lon / 15;
+          return Math.abs(offLon - tz.offset) < 1;
+        });
+        let html = `
+    <div class="tz-row"><span class="tz-label">CURRENT TIME</span><span class="tz-val">${pad(tzTime.getHours())}:${pad(tzTime.getMinutes())}:${pad(tzTime.getSeconds())}</span></div>
+    <div class="tz-row"><span class="tz-label">UTC OFFSET</span><span class="tz-val">${tz.offset >= 0 ? '+' : ''}${tz.offset}:00</span></div>
+    <div class="tz-row"><span class="tz-label">LONGITUDE</span><span class="tz-val">${tz.offset * 15 >= 0 ? '+' : ''}${tz.offset * 15}°</span></div>
+  `;
+        if (cities.length) {
+          html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,168,76,.15);font-size:9px;letter-spacing:1px;color:rgba(212,200,154,.6);margin-bottom:4px">CITIES IN ZONE</div>`;
+          cities.slice(0, 8).forEach(c => {
+            html += `<div class="tz-row"><span class="tz-label">${c.n}</span><span class="tz-val">${formatTime(now, c.tz)}</span></div>`;
+          });
+        }
+        document.getElementById('tz-content').innerHTML = html;
+        panel.style.display = 'block';
+      }
+
+      function closeTZPanel() {
+        document.getElementById('tz-panel').style.display = 'none';
+        highlightedTZ = null;
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  MOUSE EVENTS
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      canvas.addEventListener('mousemove', e => {
+        mouseX = e.clientX; mouseY = e.clientY;
+        const tip = document.getElementById('tooltip');
+        const { lat, lon } = xyToLL(e.clientX, e.clientY);
+        const now = new Date();
+        const sun = solarPosition(now.getTime());
+        const angle = angularDist(lat, lon, sun.lat, sun.lon);
+        const phase = angle < 90 ? 'Day' : angle < 97 ? 'Twilight' : 'Night';
+        const latStr = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}`;
+        const lonStr = `${Math.abs(lon).toFixed(1)}°${lon >= 0 ? 'E' : 'W'}`;
+
+        let nearest = null, nearestDist = Infinity;
+        CITIES.forEach(city => {
+          const d = Math.hypot(city.lon - lon, city.lat - lat);
+          if (d < nearestDist) { nearestDist = d; nearest = city; }
+        });
+
+        let text = `${latStr}  ${lonStr}  ·  ${phase}`;
+        if (nearestDist < 4) {
+          const sr = sunriseSet(nearest.lat, nearest.lon, now);
+          text = `${nearest.n}  ·  ${formatTime(now, nearest.tz)}  ·  ↑${sr.rise.split(' ')[0]}  ↓${sr.set.split(' ')[0]}`;
+        }
+        if (tip) {
+          tip.textContent = text;
+          tip.style.display = 'block';
+          tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 200) + 'px';
+          tip.style.top = (e.clientY - 8) + 'px';
+        }
+
+        // Flight Hover Detection + Full Data Popup
+        const oldSelectedFlight = _selectedFlight;
+        const hoveredFlight = _findNearestFlight(mouseX, mouseY, HIT_RADIUS + 5);
+        if (hoveredFlight) {
+          _hoveredFlight = hoveredFlight.icao;
+          _selectedFlight = hoveredFlight.icao;
+          _showFlightPopup(hoveredFlight, mouseX, mouseY);
+        } else {
+          _hoveredFlight = null;
+          _selectedFlight = null;
+          _hideFlightPopup();
+        }
+
+        // Earthquake Hover Detection
+        const oldH = hoveredQuake;
+        hoveredQuake = null;
+        if (overlays.quakes.enabled) {
+          for (const q of overlays.quakes.data) {
+            const { x, y } = llToXY(q.lat, q.lon);
+            // Account for possible multiple hits if the map wraps, 
+            // but llToXY already centers on the current view.
+            const dist = Math.hypot(x - mouseX, y - mouseY);
+            if (dist < Math.max(12, q.mag * 6)) {
+              hoveredQuake = q;
+              break;
+            }
+          }
+        }
+
+        if (oldH !== hoveredQuake || oldSelectedFlight !== _selectedFlight) draw(); // Immediate refresh for hover effect
+
+        const qPopup = document.getElementById('quake-popup');
+        if (qPopup) {
+          if (hoveredQuake) {
+            qPopup.innerHTML = `
+              <div class="fp-callsign">M ${hoveredQuake.mag.toFixed(1)} Earthquake</div>
+              <div class="fp-row"><span class="fp-label">LOCATION</span><span class="fp-val">${hoveredQuake.place}</span></div>
+              <div class="fp-row"><span class="fp-label">LAT / LON</span><span class="fp-val">${hoveredQuake.lat.toFixed(2)} / ${hoveredQuake.lon.toFixed(2)}</span></div>
+            `;
+            qPopup.style.display = 'block';
+            qPopup.style.left = Math.min(mouseX + 16, window.innerWidth - 240) + 'px';
+            qPopup.style.top = Math.min(mouseY + 8, window.innerHeight - 100) + 'px';
+          } else {
+            qPopup.style.display = 'none';
+          }
+        }
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        document.getElementById('tooltip').style.display = 'none';
+        _hoveredFlight = null;
+        _selectedFlight = null;
+        _hideFlightPopup();
+      });
+
+      canvas.addEventListener('click', e => {
+        const { lat, lon } = xyToLL(e.clientX, e.clientY);
+        if (showTZBands) {
+          const offset = Math.round(lon / 15);
+          const tz = TZ_BANDS.find(t => t.offset === offset);
+          if (tz) openTZPanel(tz);
+          return;
+        }
+        // Click near a city
+        let nearest = null, nearestDist = Infinity;
+        CITIES.forEach(city => {
+          const d = Math.hypot(city.lon - lon, city.lat - lat);
+          if (d < nearestDist) { nearestDist = d; nearest = city; }
+        });
+        if (nearestDist < 4) {
+          const tzOffset = Math.round(nearest.lon / 15);
+          const tzBand = TZ_BANDS.find(t => t.offset === tzOffset) || { offset: tzOffset, name: `UTC${tzOffset >= 0 ? '+' : ''}${tzOffset}`, label: nearest.n, color: 'rgba(100,100,200,0.2)' };
+          const now = new Date();
+          const sr = sunriseSet(nearest.lat, nearest.lon, now);
+          const fakeTZ = {
+            ...tzBand,
+            name: nearest.n,
+            label: `${nearest.cap ? '★ Capital' : 'City'}  ·  ${nearest.tz.replace('_', ' ')}`,
+          };
+          // inject sunrise/set into panel
+          setTimeout(() => {
+            const det = document.getElementById('tz-content');
+            if (det) {
+              det.innerHTML += `
+          <div class="tz-row"><span class="tz-label">SUNRISE</span><span class="tz-val">${sr.rise}</span></div>
+          <div class="tz-row"><span class="tz-label">SUNSET</span><span class="tz-val">${sr.set}</span></div>
+        `;
+            }
+          }, 50);
+          openTZPanel(fakeTZ);
+        }
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', e => {
+        if (e.key === 't' || e.key === 'T') {
+          showTZBands = !showTZBands;
+          if (!showTZBands) { highlightedTZ = null; closeTZPanel(); }
+        }
+        if (e.key === 'Escape') closeTZPanel();
+      });
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  HINT overlay
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      function showHints() {
+        const div = document.createElement('div');
+        div.style.cssText = 'position:absolute;bottom:75px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:10px 24px;font-family:Roboto,sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.9);letter-spacing:1px;text-align:center;pointer-events:none;box-shadow:0 4px 10px rgba(0,0,0,0.5);';
+        div.innerHTML = 'PRESS  <span style="color:#f5d76e">T</span>  TO TOGGLE TIMEZONE BANDS &nbsp;&middot;&nbsp; <span style="color:#f5d76e">CLICK</span> MAP TO INSPECT';
+        document.getElementById('container').appendChild(div);
+        setTimeout(() => div.style.display = 'none', 5000);
+      }
+
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      //  INIT
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      async function init() {
+        resize();
+        buildProceduralImages();
+        showHints();
+        initTicker();
+
+        // Start Overlay Fetches (Flights and Quakes by default)
+        if (overlays.aurora.enabled) initAurora();
+        initFlights();
+        initQuakes();
+
+        // Start ISS fetch loop
+        fetchISS();
+        setInterval(fetchISS, 5000);
+
+        // Load NASA textures in background
+        loadTextures().then(() => {
+          if (!USE_PROCEDURAL) console.log('NASA textures loaded');
+        });
+
+        // Animation loop — draw every frame for live clock
+        let lastDraw = 0;
+        function loop(ts) {
+          if (ts - lastDraw > 200) { // ~5fps for shadow mask recalc (CPU friendly)
+            draw();
+            lastDraw = ts;
+          }
+          requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+      }
+
+      init();
+    </script>
+</body>
+
+</html>
