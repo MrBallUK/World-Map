@@ -2,6 +2,7 @@
 
 <img width="2481" height="1228" alt="image" src="https://github.com/user-attachments/assets/2d318a0d-0a95-40d1-be8b-b409329d0e97" />
 
+
 Realtime world map clock with day/night shading, ISS tracking, live flights, aurora, and earthquakes.
 
 This project is a single-page HTML5 canvas app (`index.html`) with no build step.
@@ -65,8 +66,6 @@ Notes:
 ## Project Structure
 
 - `index.html` - main app (HTML/CSS/JS)
-- `day.jpg` - local day texture asset
-- `night.jpg` - local night texture asset
 
 ## Known Limitations
 
